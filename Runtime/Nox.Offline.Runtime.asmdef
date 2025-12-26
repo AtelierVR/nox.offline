@@ -1,0 +1,26 @@
+{
+  "name": "Nox.Offline.Runtime",
+  "rootNamespace": "",
+  "references": [
+    "UniTask",
+    "Nox.Sessions",
+    "Nox.Worlds",
+    "Nox.CCK.Sessions",
+    "Nox.CCK",
+    "Nox.Entities",
+    "Nox.CCK.Worlds",
+    "Nox.Players",
+    "Nox.Users",
+    "Nox.Controllers",
+    "Nox.Worlds.Spawns"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
