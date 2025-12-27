@@ -1,5 +1,5 @@
 {
-  "name": "api.nox.offline",
+  "name": "Nox.Mods.Offline",
   "rootNamespace": "",
   "references": [
     "Nox.CCK",
