@@ -16,6 +16,12 @@ namespace Nox.Offline.Runtime {
 		public int MasterId { get; set; } = InvalidEntityId;
 		public int LocalId  { get; set; } = InvalidEntityId;
 
+		public Player LocalPlayer
+			=> GetEntity<Player>(LocalId);
+
+		public Player MasterPlayer
+			=> GetEntity<Player>(MasterId);
+
 
 		private readonly Dictionary<int, Entity> _entities = new();
 

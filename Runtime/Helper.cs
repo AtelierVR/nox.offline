@@ -32,13 +32,13 @@ namespace Nox.Offline.Runtime {
 						Main.WorldAPI.MakeAssetSearchRequest()
 							.SetEngines(new[] { EngineExtensions.CurrentEngine.GetEngineName() })
 							.SetPlatforms(new[] { PlatformExtensions.CurrentPlatform.GetPlatformName() })
-							.SetVersions(new[] { options.WorldIdentifier.GetVersion() })
+							.SetVersions(new[] { options.WorldIdentifier.Version })
 							.SetLimit(1)
 					)).GetAssets()
 					.FirstOrDefault();
 
 				if (asset == null) {
-					Logger.LogError($"Failed to find asset for world {options.WorldIdentifier.ToString()} with version {options.WorldIdentifier.GetVersion()}");
+					Logger.LogError($"Failed to find asset for world {options.WorldIdentifier.ToString()} with version {options.WorldIdentifier.Version}");
 					session.UpdateState(Status.Error, $"World '{options.WorldIdentifier.ToString()}' not found", 1f);
 					return;
 				}
@@ -71,7 +71,7 @@ namespace Nox.Offline.Runtime {
 			}
 
 			if (scene == null) {
-				Logger.LogError($"Failed to load scene for world {options.WorldIdentifier.ToString()} with version {options.WorldIdentifier.GetVersion()}");
+				Logger.LogError($"Failed to load scene for world {options.WorldIdentifier.ToString()} with version {options.WorldIdentifier.Version}");
 				session.UpdateState(Status.Error, $"Failed to load world '{options.WorldIdentifier.ToString()}'", 1f);
 				return;
 			}

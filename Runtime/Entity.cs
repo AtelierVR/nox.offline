@@ -4,32 +4,35 @@ using Nox.Entities;
 
 namespace Nox.Offline.Runtime {
 	public class Entity : IEntity {
-		private readonly  int             _id;
 		internal readonly Entities        Context;
 		private           Physical        _physical;
 		internal readonly List<IProperty> Properties = new();
 
 		protected Entity(Entities context, int id) {
-			_id     = id;
+			Id     = id;
 			Context = context;
 			context.RegisterEntity(this);
 		}
 
-		public int Id
-			=> _id;
+		public int Id { get; }
 
 		public IProperty[] GetProperties()
 			=> Properties.ToArray();
 
 		public bool TryGetProperty(int key, out IProperty property) {
 			foreach (var prop in Properties) {
-				if (prop.GetKey() != key) continue;
+				if (prop.Key != key) continue;
 				property = prop;
 				return true;
 			}
 
 			property = null;
 			return false;
+		}
+
+		protected virtual Physical InstantiatePhysical() {
+			Logger.LogWarning($"Entity {Id} does not implement {nameof(InstantiatePhysical)}, cannot create physical representation.", tag: nameof(Entity));
+			return null;
 		}
 
 		public bool HasPhysical()
@@ -43,10 +46,6 @@ namespace Nox.Offline.Runtime {
 
 			physical = null;
 			return false;
-		}
-
-		protected virtual Physical InstantiatePhysical() {
-			return null;
 		}
 
 		public bool MakePhysical() {

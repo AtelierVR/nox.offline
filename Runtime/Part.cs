@@ -31,7 +31,7 @@ namespace DefaultNamespace {
 				if (!IsSameVelocity(part.GetVelocity()))
 					SetVelocity(part.GetVelocity());
 				if (!IsSameAngularVelocity(part.GetAngularVelocity()))
-					SetAngularVelocity(part.GetAngularVelocity());
+					SetAngular(part.GetAngularVelocity());
 			}
 
 			_controller = null;
@@ -124,11 +124,11 @@ namespace DefaultNamespace {
 			set {
 				if (_controller != null) {
 					var part = new TransformObject();
-					part.SetAngularVelocity(value);
+					part.SetAngular(value);
 					_controller.SetPart(Id, part);
 				}
 
-				SetAngularVelocity(value);
+				SetAngular(value);
 			}
 		}
 	}

@@ -46,18 +46,17 @@ namespace Nox.Offline.Runtime {
 			get => InterState;
 			private set {
 				InterState = value;
-				Logger.LogDebug($"{value.Status}: {value.Message} ({value.Progress:P0})", tag: Tag);
 				OnStateChanged.Invoke(value);
 			}
 		}
 
 		public IPlayer MasterPlayer {
-			get => InterEntities.GetEntity<Player>(InterEntities.MasterId);
+			get => InterEntities.MasterPlayer;
 			set => Logger.LogWarning("Setting the master player is not supported in offline sessions.", tag: Tag);
 		}
 
 		public IPlayer LocalPlayer {
-			get => InterEntities.GetEntity<Player>(InterEntities.LocalId);
+			get => InterEntities.LocalPlayer;
 			set => Logger.LogWarning("Setting the local player is not supported in offline sessions.", tag: Tag);
 		}
 
@@ -90,10 +89,8 @@ namespace Nox.Offline.Runtime {
 			OnControllerChanged(Main.ControllerAPI.Current);
 		}
 
-		public void OnControllerChanged(IController controller) {
-			foreach (var player in InterEntities.GetEntities<Player>())
-				player.UpdateController(controller);
-		}
+		public void OnControllerChanged(IController controller)
+			=> InterEntities.LocalPlayer?.UpdateController(controller);
 
 		public async UniTask OnDeselect(ISession @new) {
 			Logger.LogDebug("Deselecting session", tag: Tag);
@@ -108,8 +105,7 @@ namespace Nox.Offline.Runtime {
 
 			await UniTask.Yield();
 
-			foreach (var player in InterEntities.GetEntities<Player>())
-				player.RemoveController();
+			InterEntities.LocalPlayer?.RemoveController();
 		}
 
 		public UnityEvent<IPlayer> OnPlayerJoined { get; } = new();
