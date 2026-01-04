@@ -1,26 +1,28 @@
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using Nox.CCK.Properties;
-using Nox.CCK.Utils;
+using Nox.CCK.Sessions;
 using Nox.Controllers;
 using Nox.Entities;
 using Nox.Players;
 using Nox.Sessions;
 using Nox.Worlds;
+using UnityEngine;
 using UnityEngine.Events;
+using Logger = Nox.CCK.Utils.Logger;
 
 namespace Nox.Offline.Runtime {
 	public sealed class Session : BaseEditablePropertyObject, ISession {
 		internal Session(string id) {
-			_id           = id;
+			_id = id;
 			InterEntities = new Entities(this);
-			InterState    = new State(Status.Pending, "Session is initializing", 0f);
+			InterState = new State(Status.Pending, "Session is initializing", 0f);
 		}
 
-		internal          IState     InterState;
-		internal          Dimensions InterDimensions;
-		internal readonly Entities   InterEntities;
-		private readonly  string     _id;
+		internal IState InterState;
+		internal Dimensions InterDimensions;
+		internal readonly Entities InterEntities;
+		private readonly string _id;
 
 		public string Id
 			=> _id;
@@ -35,8 +37,10 @@ namespace Nox.Offline.Runtime {
 		internal void UpdateState(Status stt, string msg, float pg)
 			=> State = new State(stt, msg, pg);
 
-		internal void SetDimension(IRuntimeWorld scene)
-			=> InterDimensions = new Dimensions(scene);
+		internal void SetDimension(IRuntimeWorld scene) {
+			InterDimensions?.Dispose();
+			InterDimensions = new Dimensions(this, scene);
+		}
 
 		internal string Tag
 			=> GetType().Name + $"_{Id}";
@@ -87,9 +91,44 @@ namespace Nox.Offline.Runtime {
 			await UniTask.Yield();
 
 			OnControllerChanged(Main.ControllerAPI.Current);
-			
+
 			foreach (var module in GetAllModules())
 				module.OnSessionSelected();
+		}
+
+		public void OnSceneLoaded(int index, IWorldDescriptor descriptor, GameObject anchor) {
+			Main.CoreAPI.EventAPI.Emit("session_scene_added", this, index, descriptor, anchor);
+
+			var modules = descriptor.GetModules<ISessionModule>();
+			Logger.LogDebug($"OnDescriptorAdded: {descriptor} with {modules.Length} modules");
+
+			foreach (var module in modules)
+				module.OnLoaded(this);
+
+			foreach (var player in InterEntities.GetEntities<IPlayer>()) {
+				if (player == null) continue;
+				foreach (var module in modules)
+					module.OnPlayerJoined(player);
+			}
+
+			var master = MasterPlayer;
+			if (master != null)
+				foreach (var module in modules)
+					module.OnAuthorityTransferred(master, null);
+
+			if (SessionHelper.IsCurrent(Main.SessionAPI, this))
+				foreach (var module in modules)
+					module.OnSessionSelected();
+
+			foreach (var module in GetAllModules())
+				module.OnSceneLoaded(descriptor, index, anchor);
+		}
+
+		public void OnSceneUnloaded(int index) {
+			Main.CoreAPI.EventAPI.Emit("session_scene_removed", this, index);
+
+			foreach (var module in GetAllModules())
+				module.OnSceneUnloaded(index);
 		}
 
 		public void OnControllerChanged(IController controller)
@@ -103,7 +142,7 @@ namespace Nox.Offline.Runtime {
 				await UniTask.Yield();
 				return;
 			}
-			
+
 			foreach (var module in GetAllModules())
 				module.OnSessionDeselected();
 

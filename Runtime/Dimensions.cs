@@ -2,17 +2,20 @@ using Cysharp.Threading.Tasks;
 using Nox.Sessions;
 using Nox.Worlds;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using Logger = Nox.CCK.Utils.Logger;
 
 namespace Nox.Offline.Runtime {
 	public class Dimensions : IDimensions {
-		private const int UnloadedIndex = -1;
-		public const  int MainIndex     = 0;
 
-		internal Dimensions(IRuntimeWorld world) {
+		private const int UnloadedIndex = -1;
+		public const int MainIndex = 0;
+
+		internal Dimensions(Session session, IRuntimeWorld world) {
 			_world = world;
-			_ids   = new int[world.GetDimensionCount()];
+			_session = session;
+			_ids = new int[world.GetDimensionCount()];
 			for (var i = 0; i < _ids.Length; i++)
 				_ids[i] = UnloadedIndex;
 		}
@@ -21,6 +24,7 @@ namespace Nox.Offline.Runtime {
 		/// The world associated with this dimension.
 		/// </summary>
 		private readonly IRuntimeWorld _world;
+		private readonly Session _session;
 
 		/// <summary>
 		/// Redirect IRuntimeWorld instances ids, by local index.
@@ -46,6 +50,9 @@ namespace Nox.Offline.Runtime {
 
 			_ids[index] = await dimension.MakeInstance();
 			Logger.LogDebug($"Created dimension instance at index {index}", tag: nameof(Dimensions));
+			var descriptor = dimension.GetDescriptor(_ids[index]);
+			var anchor = dimension.GetAnchor(_ids[index]);
+			_session.OnSceneLoaded(index, descriptor, anchor);
 			return true;
 		}
 
@@ -141,6 +148,7 @@ namespace Nox.Offline.Runtime {
 				if (TryDimension(i, out var instance))
 					instance.RemoveInstance(_ids[i]);
 				_ids[i] = UnloadedIndex;
+				_session.OnSceneUnloaded(i);
 			}
 		}
 
