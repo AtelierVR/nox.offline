@@ -39,6 +39,16 @@
     {
       "id": "session",
       "type": "depends"
+    },
+    {
+      "id": "world",
+      "type": "depends"
+    }
+  ],
+  "constraints": [
+    {
+      "type": "after",
+      "id": "session"
     }
   ],
   "entrypoints": {
