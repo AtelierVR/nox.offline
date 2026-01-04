@@ -40,7 +40,7 @@ namespace Nox.Offline.Runtime {
 
 		public string    Title           = "Offline Session";
 		public Texture2D Thumbnail       = null;
-		public bool      DisposeOnChange = false;
+		public bool      DisposeOnChange = true;
 		public string    ShortName       = null;
 		public bool      ChangeCurrent   = true;
 	}
