@@ -38,7 +38,7 @@ namespace Nox.Offline.Runtime {
 					.FirstOrDefault();
 
 				if (asset == null) {
-					Logger.LogError($"Failed to find asset for world {options.WorldIdentifier.ToString()} with version {options.WorldIdentifier.Version}");
+					Logger.LogError($"Failed to find asset for world {options.WorldIdentifier.ToString()} with version {options.WorldIdentifier.Version}", session.Tag);
 					session.UpdateState(Status.Error, $"World '{options.WorldIdentifier.ToString()}' not found", 1f);
 					return;
 				}
@@ -65,13 +65,13 @@ namespace Nox.Offline.Runtime {
 					progress: arg0 => session.UpdateState(Status.Pending, $"Loading world '{options.WorldIdentifier.ToString()}'...", 0.1f + arg0 * 0.5f)
 				);
 			} else {
-				Logger.LogError("No valid world specified for offline session.");
+				Logger.LogError("No valid world specified for offline session.", session.Tag);
 				session.UpdateState(Status.Error, "No valid world specified", 1f);
 				return;
 			}
 
 			if (scene == null) {
-				Logger.LogError($"Failed to load scene for world {options.WorldIdentifier.ToString()} with version {options.WorldIdentifier.Version}");
+				Logger.LogError($"Failed to load scene for world {options.WorldIdentifier.ToString()} with version {options.WorldIdentifier.Version}", session.Tag);
 				session.UpdateState(Status.Error, $"Failed to load world '{options.WorldIdentifier.ToString()}'", 1f);
 				return;
 			}

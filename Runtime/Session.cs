@@ -100,7 +100,7 @@ namespace Nox.Offline.Runtime {
 			Main.CoreAPI.EventAPI.Emit("session_scene_added", this, index, descriptor, anchor);
 
 			var modules = descriptor.GetModules<ISessionModule>();
-			Logger.LogDebug($"OnDescriptorAdded: {descriptor} with {modules.Length} modules");
+			Logger.LogDebug($"OnDescriptorAdded: {descriptor} with {modules.Length} modules", descriptor as Object, Tag);
 
 			foreach (var module in modules)
 				module.OnLoaded(this);
@@ -194,7 +194,7 @@ namespace Nox.Offline.Runtime {
 		}
 
 		public void HandlePlayerLeft(IPlayer player) {
-			Logger.LogDebug($"OnPlayerLeft: {player}");
+			Logger.LogDebug($"OnPlayerLeft: {player}", tag: Tag);
 
 			Main.CoreAPI.EventAPI.Emit("session_player_left", this, player);
 			OnPlayerLeft.Invoke(player);
@@ -212,7 +212,7 @@ namespace Nox.Offline.Runtime {
 		}
 
 		public void HandleEntityRegistered(IEntity entity) {
-			Logger.LogDebug($"OnEntityRegistered: {entity}");
+			Logger.LogDebug($"OnEntityRegistered: {entity}", tag: Tag);
 
 			Main.CoreAPI.EventAPI.Emit("session_entity_registered", this, entity);
 			OnEntityRegistered.Invoke(entity);
@@ -228,7 +228,7 @@ namespace Nox.Offline.Runtime {
 			if (entity is IPlayer player)
 				HandlePlayerLeft(player);
 
-			Logger.LogDebug($"Unregistering entity {entity}");
+			Logger.LogDebug($"Unregistering entity {entity}", tag: Tag);
 
 			Main.CoreAPI.EventAPI.Emit("session_entity_unregistered", this, entity);
 			OnEntityUnregistered.Invoke(entity);
@@ -238,7 +238,7 @@ namespace Nox.Offline.Runtime {
 		}
 
 		public void HandleAuthorityTransferred(IPlayer player, IPlayer previous) {
-			Logger.LogDebug($"OnAuthorityTransferred: {player}");
+			Logger.LogDebug($"OnAuthorityTransferred: {player}", tag: Tag);
 
 			Main.CoreAPI.EventAPI.Emit("session_authority_transferred", this, player, previous);
 			OnAuthorityTransferred.Invoke(player, previous);
