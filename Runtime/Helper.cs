@@ -2,6 +2,7 @@ using System.Linq;
 using Cysharp.Threading.Tasks;
 using Nox.CCK.Sessions;
 using Nox.CCK.Utils;
+using Nox.CCK.Worlds;
 using Nox.Sessions;
 using Nox.Worlds;
 using Logger = Nox.CCK.Utils.Logger;
@@ -26,16 +27,16 @@ namespace Nox.Offline.Runtime {
 
 			if (options.WorldType == 1) {
 				session.UpdateState(Status.Pending, "Fetching world data...", 0.05f);
-				
-				var asset = (await Main.WorldAPI.SearchAssets(
-						options.WorldIdentifier.ToString(),
-						Main.WorldAPI.MakeAssetSearchRequest()
-							.SetEngines(new[] { EngineExtensions.CurrentEngine.GetEngineName() })
-							.SetPlatforms(new[] { PlatformExtensions.CurrentPlatform.GetPlatformName() })
-							.SetVersions(new[] { options.WorldIdentifier.Version })
-							.SetLimit(1)
-					)).GetAssets()
-					.FirstOrDefault();
+
+				var req = new AssetSearchRequest {
+					Engines = new[] { EngineExtensions.CurrentEngine.GetEngineName() },
+					Platforms = new[] { PlatformExtensions.CurrentPlatform.GetPlatformName() },
+					Versions = new[] { options.WorldIdentifier.Version },
+					Limit = 1
+				};
+
+				var asset = (await Main.WorldAPI.SearchAssets(options.WorldIdentifier, req))
+					?.Assets.FirstOrDefault();
 
 				if (asset == null) {
 					Logger.LogError($"Failed to find asset for world {options.WorldIdentifier.ToString()} with version {options.WorldIdentifier.Version}", session.Tag);
@@ -45,26 +46,28 @@ namespace Nox.Offline.Runtime {
 
 				session.UpdateState(Status.Pending, $"Preparing world '{options.WorldIdentifier.ToString()}'...", 0.1f);
 
-				if (!Main.WorldAPI.HasSceneInCache(asset.GetHash())) {
+				if (!Main.WorldAPI.HasInCache(asset.Hash)) {
 					session.UpdateState(Status.Pending, $"Downloading world '{options.WorldIdentifier.ToString()}'...", 0.15f);
-					var download = Main.WorldAPI.DownloadSceneToCache(
-						asset.GetUrl(),
-						hash: asset.GetHash(),
+					var download = Main.WorldAPI.DownloadToCache(
+						asset.Url,
+						hash: asset.Hash,
 						progress: arg0 => session.UpdateState(Status.Pending, $"Downloading world '{options.WorldIdentifier.ToString()}'...", 0.15f + arg0 * 0.45f)
 					);
 					await download.Start();
 				}
 
 				session.UpdateState(Status.Pending, $"Loading world '{options.WorldIdentifier}'...", 0.6f);
-				scene = await Main.WorldAPI.LoadFromCache(asset.GetHash());
-			} else if (options.WorldType == 2) {
+				scene = await Main.WorldAPI.LoadFromCache(asset.Hash);
+			}
+			else if (options.WorldType == 2) {
 				session.UpdateState(Status.Pending, "Loading world resource...", 0.1f);
-				
+
 				scene = await Main.WorldAPI.LoadFromAssets(
 					options.WorldResource,
 					progress: arg0 => session.UpdateState(Status.Pending, $"Loading world '{options.WorldIdentifier.ToString()}'...", 0.1f + arg0 * 0.5f)
 				);
-			} else {
+			}
+			else {
 				Logger.LogError("No valid world specified for offline session.", session.Tag);
 				session.UpdateState(Status.Error, "No valid world specified", 1f);
 				return;
@@ -78,7 +81,7 @@ namespace Nox.Offline.Runtime {
 
 			session.UpdateState(Status.Pending, $"World '{options.WorldIdentifier.ToString()}' loaded successfully", 0.65f);
 
-			scene.SetIdentifier(options.WorldIdentifier);
+			scene.Identifier = options.WorldIdentifier;
 			session.SetDimension(scene);
 
 			if (options.ChangeCurrent) {

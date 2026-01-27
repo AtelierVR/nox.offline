@@ -1,8 +1,8 @@
+using System.Linq;
 using Cysharp.Threading.Tasks;
 using Nox.Sessions;
 using Nox.Worlds;
 using UnityEngine;
-using UnityEngine.Events;
 using UnityEngine.SceneManagement;
 using Logger = Nox.CCK.Utils.Logger;
 
@@ -15,7 +15,7 @@ namespace Nox.Offline.Runtime {
 		internal Dimensions(Session session, IRuntimeWorld world) {
 			_world = world;
 			_session = session;
-			_ids = new int[world.GetDimensionCount()];
+			_ids = new int[world.Dimensions.Count()];
 			for (var i = 0; i < _ids.Length; i++)
 				_ids[i] = UnloadedIndex;
 		}
@@ -38,13 +38,13 @@ namespace Nox.Offline.Runtime {
 		/// <returns></returns>
 		public async UniTask<bool> CreateIfMissing(int index) {
 			if (index < 0 || index >= _ids.Length) {
-				Logger.LogWarning($"Tried to create dimension instance at invalid index {index} for world {_world.GetIdentifier()}", tag: nameof(Dimensions));
+				Logger.LogWarning($"Tried to create dimension instance at invalid index {index} for world {_world.Identifier}", tag: nameof(Dimensions));
 				return false;
 			}
 
 			if (IsLoaded(index)) return true;
 			if (!TryDimension(index, out var dimension)) {
-				Logger.LogWarning($"Tried to create dimension instance at index {index} for world {_world.GetIdentifier()}, but dimension not found", tag: nameof(Dimensions));
+				Logger.LogWarning($"Tried to create dimension instance at index {index} for world {_world.Identifier}, but dimension not found", tag: nameof(Dimensions));
 				return false;
 			}
 
@@ -75,13 +75,13 @@ namespace Nox.Offline.Runtime {
 		private bool TryDimension(int index, out IRuntimeWorldDimension dimension) {
 			dimension = null;
 			if (index < 0 || index >= _ids.Length) {
-				Logger.LogWarning($"Tried to get dimension at invalid index {index} for world {_world.GetIdentifier()}", tag: nameof(Dimensions));
+				Logger.LogWarning($"Tried to get dimension at invalid index {index} for world {_world.Identifier}", tag: nameof(Dimensions));
 				return false;
 			}
 
 			dimension = _world.GetDimension(index);
 			if (dimension == null) {
-				Logger.LogWarning($"Tried to get dimension at index {index} for world {_world.GetIdentifier()}, but dimension not found", tag: nameof(Dimensions));
+				Logger.LogWarning($"Tried to get dimension at index {index} for world {_world.Identifier}, but dimension not found", tag: nameof(Dimensions));
 				return false;
 			}
 
@@ -92,7 +92,7 @@ namespace Nox.Offline.Runtime {
 		/// Gets the world identifier associated with this dimension.
 		/// </summary>
 		public IWorldIdentifier Identifier
-			=> _world.GetIdentifier();
+			=> _world.Identifier;
 
 		/// <summary>
 		/// Indicates if the instance at the given index is loaded.
@@ -136,7 +136,7 @@ namespace Nox.Offline.Runtime {
 		/// Sets the world as the current active world.
 		/// </summary>
 		public void SetCurrent()
-			=> _world.SetCurrent();
+			=> _world.IsCurrent = true;
 
 		/// <summary>
 		/// Disposes the dimension

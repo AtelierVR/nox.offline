@@ -1,3 +1,4 @@
+using System;
 using Nox.CCK.Utils;
 using Nox.Controllers;
 using Nox.Entities;
@@ -8,6 +9,7 @@ namespace DefaultNamespace {
 	public class Part : TransformObject, IPart {
 		// if the controller is null, the new values are stored but not applied
 		private IController _controller;
+		public DateTime Updated { get; private set; } = DateTime.UtcNow;
 
 		internal void Restore(IController controller) {
 			if (_controller == controller) return;
@@ -30,8 +32,9 @@ namespace DefaultNamespace {
 					SetScale(part.GetScale());
 				if (!IsSameVelocity(part.GetVelocity()))
 					SetVelocity(part.GetVelocity());
-				if (!IsSameAngularVelocity(part.GetAngularVelocity()))
-					SetAngular(part.GetAngularVelocity());
+				if (!IsSameAngularVelocity(part.GetAngular()))
+					SetAngular(part.GetAngular());
+				Updated = DateTime.UtcNow;
 			}
 
 			_controller = null;
@@ -43,7 +46,7 @@ namespace DefaultNamespace {
 			Context = context;
 		}
 
-		internal readonly Player Context;
+		readonly internal Player Context;
 
 		public ushort Id { get; }
 
@@ -65,6 +68,7 @@ namespace DefaultNamespace {
 				}
 
 				SetPosition(value);
+				Updated = DateTime.UtcNow;
 			}
 		}
 
@@ -81,6 +85,7 @@ namespace DefaultNamespace {
 				}
 
 				SetRotation(value);
+				Updated = DateTime.UtcNow;
 			}
 		}
 
@@ -97,6 +102,7 @@ namespace DefaultNamespace {
 				}
 
 				SetScale(value);
+				Updated = DateTime.UtcNow;
 			}
 		}
 
@@ -113,14 +119,15 @@ namespace DefaultNamespace {
 				}
 
 				SetVelocity(value);
+				Updated = DateTime.UtcNow;
 			}
 		}
 
 		public Vector3 Angular {
 			get
 				=> _controller != null && _controller.TryGetPart(Id, out var part)
-					? part.GetAngularVelocity()
-					: GetAngularVelocity();
+					? part.GetAngular()
+					: GetAngular();
 			set {
 				if (_controller != null) {
 					var part = new TransformObject();
@@ -129,6 +136,7 @@ namespace DefaultNamespace {
 				}
 
 				SetAngular(value);
+				Updated = DateTime.UtcNow;
 			}
 		}
 	}

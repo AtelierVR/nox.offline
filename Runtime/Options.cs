@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Nox.CCK.Utils;
 using Nox.CCK.Worlds;
+using Nox.Worlds;
 using UnityEngine;
 
 namespace Nox.Offline.Runtime {
@@ -21,11 +22,11 @@ namespace Nox.Offline.Runtime {
 			if (dict.TryGetValue("world", out var worldObj))
 				switch (worldObj) {
 					case WorldIdentifier worldId:
-						options.WorldType       = 1;
+						options.WorldType = 1;
 						options.WorldIdentifier = worldId;
 						break;
 					case ResourceIdentifier resId:
-						options.WorldType     = 2;
+						options.WorldType = 2;
 						options.WorldResource = resId;
 						break;
 				}
@@ -35,13 +36,13 @@ namespace Nox.Offline.Runtime {
 
 		public int WorldType = 0;
 
-		public WorldIdentifier    WorldIdentifier = WorldIdentifier.Invalid;
-		public ResourceIdentifier WorldResource   = ResourceIdentifier.Invalid;
+		public IWorldIdentifier WorldIdentifier = Nox.CCK.Worlds.WorldIdentifier.Invalid;
+		public ResourceIdentifier WorldResource = ResourceIdentifier.Invalid;
 
-		public string    Title           = "Offline Session";
-		public Texture2D Thumbnail       = null;
-		public bool      DisposeOnChange = true;
-		public string    ShortName       = null;
-		public bool      ChangeCurrent   = true;
+		public string Title = "Offline Session";
+		public Texture2D Thumbnail = null;
+		public bool DisposeOnChange = true;
+		public string ShortName = null;
+		public bool ChangeCurrent = true;
 	}
 }

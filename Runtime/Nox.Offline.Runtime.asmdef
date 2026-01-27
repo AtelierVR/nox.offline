@@ -12,7 +12,8 @@
     "Nox.Players",
     "Nox.Users",
     "Nox.Controllers",
-    "Nox.Worlds.Spawns"
+    "Nox.Worlds.Spawns",
+    "Nox.Mods.Worlds"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

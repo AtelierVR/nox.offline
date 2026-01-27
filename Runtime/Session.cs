@@ -66,8 +66,11 @@ namespace Nox.Offline.Runtime {
 
 		public async UniTask Dispose() {
 			await UniTask.Yield();
-			InterEntities.Dispose();
-			InterDimensions.Dispose();
+			InterEntities?.Dispose();
+			InterDimensions?.Dispose();
+		}
+		public void Update() {
+			// not needed in offline
 		}
 
 		public async UniTask OnSelect(ISession old) {
@@ -164,6 +167,9 @@ namespace Nox.Offline.Runtime {
 		public UnityEvent<IEntity> OnEntityUnregistered { get; } = new();
 
 		public UnityEvent<IState> OnStateChanged { get; } = new();
+
+		public bool Match(IWorldIdentifier identifier)
+			=> InterDimensions.Identifier != null && InterDimensions.Identifier.Equals(identifier);
 
 		public UnityEvent<IPlayer, IPlayer> OnAuthorityTransferred { get; } = new();
 
