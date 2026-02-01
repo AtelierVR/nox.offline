@@ -32,7 +32,7 @@ namespace DefaultNamespace {
 					SetScale(part.GetScale());
 				if (!IsSameVelocity(part.GetVelocity()))
 					SetVelocity(part.GetVelocity());
-				if (!IsSameAngularVelocity(part.GetAngular()))
+				if (!IsSameAngular(part.GetAngular()))
 					SetAngular(part.GetAngular());
 				Updated = DateTime.UtcNow;
 			}
