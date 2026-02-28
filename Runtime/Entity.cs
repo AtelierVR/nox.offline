@@ -4,12 +4,12 @@ using Nox.Entities;
 
 namespace Nox.Offline.Runtime {
 	public class Entity : IEntity {
-		internal readonly Entities        Context;
-		private           Physical        _physical;
+		internal readonly Entities Context;
+		private Physical _physical;
 		internal readonly List<IProperty> Properties = new();
 
 		protected Entity(Entities context, int id) {
-			Id     = id;
+			Id      = id;
 			Context = context;
 			context.RegisterEntity(this);
 		}
@@ -21,7 +21,8 @@ namespace Nox.Offline.Runtime {
 
 		public bool TryGetProperty(int key, out IProperty property) {
 			foreach (var prop in Properties) {
-				if (prop.Key != key) continue;
+				if (prop.Key != key)
+					continue;
 				property = prop;
 				return true;
 			}
@@ -30,7 +31,7 @@ namespace Nox.Offline.Runtime {
 			return false;
 		}
 
-		protected virtual Physical InstantiatePhysical() {
+		virtual protected Physical InstantiatePhysical() {
 			Logger.LogWarning($"Entity {Id} does not implement {nameof(InstantiatePhysical)}, cannot create physical representation.", tag: nameof(Entity));
 			return null;
 		}
@@ -48,16 +49,39 @@ namespace Nox.Offline.Runtime {
 			return false;
 		}
 
+
+		/// <summary>
+		/// Called after the physical representation is successfully created.
+		/// Override this in derived classes to perform additional initialization.
+		/// </summary>
+		virtual protected void OnPhysicalCreated() {
+			// Base implementation does nothing
+		}
+
+		/// <summary>
+		/// Called after the physical representation is destroyed.
+		/// Override this in derived classes to perform additional cleanup.
+		/// </summary>
+		virtual protected void OnPhysicalDestroyed() {
+			// Base implementation does nothing
+		}
+
 		public bool MakePhysical() {
-			if (_physical) return true;
+			if (_physical)
+				return true;
 			_physical = InstantiatePhysical();
-			return _physical;
+			if (!_physical)
+				return false;
+			OnPhysicalCreated();
+			return true;
 		}
 
 		public void DestroyPhysical() {
-			if (!_physical) return;
+			if (!_physical)
+				return;
 			_physical.Destroy();
 			_physical = null;
+			OnPhysicalDestroyed();
 		}
 
 		public void Dispose() {

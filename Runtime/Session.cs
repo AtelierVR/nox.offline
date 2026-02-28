@@ -14,9 +14,9 @@ using Logger = Nox.CCK.Utils.Logger;
 namespace Nox.Offline.Runtime {
 	public sealed class Session : BaseEditablePropertyObject, ISession {
 		internal Session(string id) {
-			_id = id;
+			_id           = id;
 			InterEntities = new Entities(this);
-			InterState = new State(Status.Pending, "Session is initializing", 0f);
+			InterState    = new State(Status.Pending, "Session is initializing", 0f);
 		}
 
 		internal IState InterState;
@@ -51,6 +51,7 @@ namespace Nox.Offline.Runtime {
 			private set {
 				InterState = value;
 				OnStateChanged.Invoke(value);
+				Main.CoreAPI.EventAPI.Emit("session_state_changed", this, value);
 			}
 		}
 
@@ -109,9 +110,12 @@ namespace Nox.Offline.Runtime {
 				module.OnLoaded(this);
 
 			foreach (var player in InterEntities.GetEntities<IPlayer>()) {
-				if (player == null) continue;
-				foreach (var module in modules)
+				if (player == null)
+					continue;
+				foreach (var module in modules) {
 					module.OnPlayerJoined(player);
+					module.OnPlayerVisibilityChanged(player, player.HasPhysical());
+				}
 			}
 
 			var master = MasterPlayer;
@@ -189,8 +193,10 @@ namespace Nox.Offline.Runtime {
 			Main.CoreAPI.EventAPI.Emit("session_player_joined", this, player);
 			OnPlayerJoined.Invoke(player);
 
-			foreach (var module in GetAllModules())
+			foreach (var module in GetAllModules()) {
 				module.OnPlayerJoined(player);
+				module.OnPlayerVisibilityChanged(player, player.HasPhysical());
+			}
 
 			var master = MasterPlayer;
 			if (master != null && player.Id != master.Id) {
@@ -251,6 +257,16 @@ namespace Nox.Offline.Runtime {
 
 			foreach (var module in GetAllModules())
 				module.OnAuthorityTransferred(player, previous);
+		}
+
+		public void HandlePlayerVisibilityChanged(IPlayer player, bool isVisible) {
+			Logger.LogDebug($"OnPlayerVisibilityChanged: {player} is now {(isVisible ? "visible" : "invisible")}", tag: Tag);
+
+			Main.CoreAPI.EventAPI.Emit("session_player_visibility_changed", this, player, isVisible);
+			OnPlayerVisibility.Invoke(player, isVisible);
+
+			foreach (var module in GetAllModules())
+				module.OnPlayerVisibilityChanged(player, isVisible);
 		}
 	}
 }

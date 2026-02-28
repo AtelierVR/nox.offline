@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Nox.CCK.Utils;
 using Nox.Entities;
+using UnityEngine.Events;
 
 namespace Nox.Offline.Runtime {
 	public class Entities : IEntities {
@@ -32,6 +33,7 @@ namespace Nox.Offline.Runtime {
 			}
 
 			Context.HandleEntityRegistered(entity);
+			OnEntityAdded.Invoke(entity);
 		}
 
 		internal void UnregisterEntity(Entity entity) {
@@ -41,6 +43,7 @@ namespace Nox.Offline.Runtime {
 			}
 
 			Context.HandleEntityUnregistered(entity);
+			OnEntityRemoved.Invoke(entity);
 		}
 
 		public IEntity GetEntity(int id)
@@ -66,6 +69,9 @@ namespace Nox.Offline.Runtime {
 
 		public int GetCount<T>() where T : IEntity
 			=> _entities.Values.OfType<T>().Count();
+		
+		public UnityEvent<IEntity> OnEntityAdded { get; } = new();
+		public UnityEvent<IEntity> OnEntityRemoved { get; } = new();
 
 		// ReSharper disable Unity.PerformanceAnalysis
 		public void Dispose() {

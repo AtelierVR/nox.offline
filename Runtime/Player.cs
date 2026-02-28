@@ -16,7 +16,7 @@ namespace Nox.Offline.Runtime {
 
 		private readonly Dictionary<ushort, Part> _parts = new();
 
-		protected override Physical InstantiatePhysical() {
+		override protected Physical InstantiatePhysical() {
 			throw new System.NotImplementedException();
 		}
 
@@ -35,7 +35,8 @@ namespace Nox.Offline.Runtime {
 
 			// add parts from controller
 			foreach (var cPart in cParts) {
-				if (_parts.ContainsKey(cPart.Key)) continue;
+				if (_parts.ContainsKey(cPart.Key))
+					continue;
 				_parts[cPart.Key] = new Part(this, cPart.Key);
 			}
 
@@ -85,10 +86,10 @@ namespace Nox.Offline.Runtime {
 
 		public void Respawn() {
 			if (Context.Context.Dimensions
-				    .GetDescriptor(Dimensions.MainIndex)
-				    .GetModules()
-				    .FirstOrDefault(e => e is ISpawnModule)
-			    is not ISpawnModule module) {
+					.GetDescriptor(Dimensions.MainIndex)
+					.GetModules()
+					.FirstOrDefault(e => e is ISpawnModule)
+				is not ISpawnModule module) {
 				Logger.LogWarning("No spawn module found for respawning player.");
 				return;
 			}
@@ -101,7 +102,8 @@ namespace Nox.Offline.Runtime {
 		public Vector3 Position {
 			get => _parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p) ? p.Position : Vector3.zero;
 			set {
-				if (!_parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p)) return;
+				if (!_parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p))
+					return;
 				p.Position = value;
 			}
 		}
@@ -109,7 +111,8 @@ namespace Nox.Offline.Runtime {
 		public Quaternion Rotation {
 			get => _parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p) ? p.Rotation : Quaternion.identity;
 			set {
-				if (!_parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p)) return;
+				if (!_parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p))
+					return;
 				p.Rotation = value;
 			}
 		}
@@ -117,7 +120,8 @@ namespace Nox.Offline.Runtime {
 		public Vector3 Scale {
 			get => _parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p) ? p.Scale : Vector3.one;
 			set {
-				if (!_parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p)) return;
+				if (!_parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p))
+					return;
 				p.Scale = value;
 			}
 		}
@@ -125,7 +129,8 @@ namespace Nox.Offline.Runtime {
 		public Vector3 Velocity {
 			get => _parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p) ? p.Velocity : Vector3.zero;
 			set {
-				if (!_parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p)) return;
+				if (!_parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p))
+					return;
 				p.Velocity = value;
 			}
 		}
@@ -133,9 +138,18 @@ namespace Nox.Offline.Runtime {
 		public Vector3 Angular {
 			get => _parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p) ? p.Angular : Vector3.zero;
 			set {
-				if (!_parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p)) return;
+				if (!_parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p))
+					return;
 				p.Angular = value;
 			}
+		}
+		
+		override protected void OnPhysicalCreated() {
+			Context.Context.HandlePlayerVisibilityChanged(this, true);
+		}
+
+		override protected void OnPhysicalDestroyed() {
+			Context.Context.HandlePlayerVisibilityChanged(this, false);
 		}
 
 		public override string ToString()

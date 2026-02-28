@@ -62,7 +62,7 @@ namespace Nox.Offline.Runtime {
 
 		internal static IUserAPI UserAPI
 			=> CoreAPI.ModAPI
-				.GetMod("user")
+				.GetMod("users")
 				.GetInstance<IUserAPI>();
 	}
 }
