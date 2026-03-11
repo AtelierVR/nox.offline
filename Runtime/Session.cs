@@ -66,6 +66,7 @@ namespace Nox.Offline.Runtime {
 		}
 
 		public async UniTask Dispose() {
+			Logger.LogDebug("Disposing session", tag: Tag);
 			await UniTask.Yield();
 			InterEntities?.Dispose();
 			InterDimensions?.Dispose();
