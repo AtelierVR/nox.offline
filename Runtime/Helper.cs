@@ -67,6 +67,14 @@ namespace Nox.Offline.Runtime {
 					progress: arg0 => session.UpdateState(Status.Pending, $"Loading world '{options.WorldIdentifier.ToString()}'...", 0.1f + arg0 * 0.5f)
 				);
 			}
+			else if (options.WorldType == 3) {
+				// Chargement direct depuis le cache local par hash, sans appel réseau
+				session.UpdateState(Status.Pending, $"Loading world from local cache (hash: {options.WorldHash})...", 0.1f);
+				scene = await Main.WorldAPI.LoadFromCache(
+					options.WorldHash,
+					progress: arg0 => session.UpdateState(Status.Pending, "Loading world from local cache...", 0.1f + arg0 * 0.5f)
+				);
+			}
 			else {
 				Logger.LogError("No valid world specified for offline session.", session.Tag);
 				session.UpdateState(Status.Error, "No valid world specified", 1f);

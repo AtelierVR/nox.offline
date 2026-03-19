@@ -31,6 +31,24 @@ namespace Nox.Offline.Runtime {
 						break;
 				}
 
+			// WorldType=3 : chargement direct depuis le cache via hash, sans aucun fetch réseau
+			if (dict.TryGetValue("world_hash", out var worldHashObj) && worldHashObj is string worldHashStr && !string.IsNullOrEmpty(worldHashStr)) {
+				options.WorldType = 3;
+				options.WorldHash = worldHashStr;
+				if (dict.TryGetValue("world_identifier", out var worldIdObj))
+					switch (worldIdObj) {
+						case WorldIdentifier worldId:
+							options.WorldIdentifier = worldId;
+							break;
+						case IWorldIdentifier iWorldId:
+							options.WorldIdentifier = CCK.Worlds.WorldIdentifier.From(iWorldId);
+							break;
+						case string worldIdStr2 when !string.IsNullOrEmpty(worldIdStr2):
+							options.WorldIdentifier = CCK.Worlds.WorldIdentifier.From(worldIdStr2);
+							break;
+					}
+			}
+
 			return options;
 		}
 
@@ -38,6 +56,12 @@ namespace Nox.Offline.Runtime {
 
 		public IWorldIdentifier WorldIdentifier = Nox.CCK.Worlds.WorldIdentifier.Invalid;
 		public ResourceIdentifier WorldResource = ResourceIdentifier.Invalid;
+
+		/// <summary>
+		/// Hash du fichier world à charger depuis le cache local (WorldType=3).
+		/// Aucun appel réseau n'est effectué.
+		/// </summary>
+		public string WorldHash = null;
 
 		public string Title = "Offline Session";
 		public Texture2D Thumbnail = null;
