@@ -1,5 +1,6 @@
 using System.Linq;
 using Cysharp.Threading.Tasks;
+using Nox.CCK.Utils;
 using Nox.Sessions;
 using Nox.Worlds;
 using UnityEngine;
@@ -91,7 +92,7 @@ namespace Nox.Offline.Runtime {
 		/// <summary>
 		/// Gets the world identifier associated with this dimension.
 		/// </summary>
-		public IWorldIdentifier Identifier
+		public Identifier Identifier
 			=> _world.Identifier;
 
 		/// <summary>

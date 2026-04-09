@@ -2,10 +2,10 @@ using System.Collections.Generic;
 using System.Linq;
 using DefaultNamespace;
 using Nox.CCK.Players;
+using Nox.CCK.Utils;
 using Nox.Controllers;
 using Nox.Entities;
 using Nox.Players;
-using Nox.Users;
 using Nox.Worlds.Spawns;
 using UnityEngine;
 using Logger = Nox.CCK.Utils.Logger;
@@ -64,12 +64,12 @@ namespace Nox.Offline.Runtime {
 		}
 
 		public string Display {
-			get => Main.UserAPI.GetCurrent()?.GetDisplay() ?? "Local #" + Id;
+			get => Main.UserAPI.Current?.Display ?? "Local #" + Id;
 			set => Logger.LogWarning("Setting Display is not supported in Offline Player.");
 		}
 
-		public IUserIdentifier Identifier
-			=> Main.UserAPI.GetCurrent()?.ToIdentifier();
+		public Identifier Identifier
+			=> Main.UserAPI.Current?.Identifier ?? Identifier.Invalid;
 
 		public bool IsMaster
 			=> true;

@@ -29,75 +29,72 @@ namespace Nox.Offline.Runtime {
 				session.UpdateState(Status.Pending, "Fetching world data...", 0.05f);
 
 				var req = new AssetSearchRequest {
-					Engines = new[] { EngineExtensions.CurrentEngine.GetEngineName() },
+					Engines   = new[] { EngineExtensions.CurrentEngine.GetEngineName() },
 					Platforms = new[] { PlatformExtensions.CurrentPlatform.GetPlatformName() },
-					Versions = new[] { options.WorldIdentifier.Version },
-					Limit = 1
+					Versions  = new[] { options.Identifier.GetVersion() },
+					Limit     = 1
 				};
 
-				var asset = (await Main.WorldAPI.SearchAssets(options.WorldIdentifier, req))
-					?.Assets.FirstOrDefault();
+				var asset = (await Main.WorldAPI.SearchAssets(options.Identifier, req))
+					?.Items.FirstOrDefault();
 
 				if (asset == null) {
-					Logger.LogError($"Failed to find asset for world {options.WorldIdentifier.ToString()} with version {options.WorldIdentifier.Version}", session.Tag);
-					session.UpdateState(Status.Error, $"World '{options.WorldIdentifier.ToString()}' not found", 1f);
+					Logger.LogError($"Failed to find asset for world {options.Identifier.ToString()} with version {options.Identifier.GetVersion()}", session.Tag);
+					session.UpdateState(Status.Error, $"World '{options.Identifier.ToString()}' not found", 1f);
 					return;
 				}
 
-				session.UpdateState(Status.Pending, $"Preparing world '{options.WorldIdentifier.ToString()}'...", 0.1f);
+				session.UpdateState(Status.Pending, $"Preparing world '{options.Identifier.ToString()}'...", 0.1f);
 
 				if (!Main.WorldAPI.HasInCache(asset.Hash)) {
-					session.UpdateState(Status.Pending, $"Downloading world '{options.WorldIdentifier.ToString()}'...", 0.15f);
+					session.UpdateState(Status.Pending, $"Downloading world '{options.Identifier.ToString()}'...", 0.15f);
 					var download = Main.WorldAPI.DownloadToCache(
 						asset.Url,
 						hash: asset.Hash,
-						progress: arg0 => session.UpdateState(Status.Pending, $"Downloading world '{options.WorldIdentifier.ToString()}'...", 0.15f + arg0 * 0.45f)
+						progress: arg0 => session.UpdateState(Status.Pending, $"Downloading world '{options.Identifier.ToString()}'...", 0.15f + arg0 * 0.45f)
 					);
 					await download.Start();
 				}
 
-				session.UpdateState(Status.Pending, $"Loading world '{options.WorldIdentifier}'...", 0.6f);
+				session.UpdateState(Status.Pending, $"Loading world '{options.Identifier}'...", 0.6f);
 				scene = await Main.WorldAPI.LoadFromCache(asset.Hash);
-			}
-			else if (options.WorldType == 2) {
+			} else if (options.WorldType == 2) {
 				session.UpdateState(Status.Pending, "Loading world resource...", 0.1f);
 
 				scene = await Main.WorldAPI.LoadFromAssets(
 					options.WorldResource,
-					progress: arg0 => session.UpdateState(Status.Pending, $"Loading world '{options.WorldIdentifier.ToString()}'...", 0.1f + arg0 * 0.5f)
+					progress: arg0 => session.UpdateState(Status.Pending, $"Loading world '{options.Identifier.ToString()}'...", 0.1f + arg0 * 0.5f)
 				);
-			}
-			else if (options.WorldType == 3) {
+			} else if (options.WorldType == 3) {
 				// Chargement direct depuis le cache local par hash, sans appel réseau
 				session.UpdateState(Status.Pending, $"Loading world from local cache (hash: {options.WorldHash})...", 0.1f);
 				scene = await Main.WorldAPI.LoadFromCache(
 					options.WorldHash,
 					progress: arg0 => session.UpdateState(Status.Pending, "Loading world from local cache...", 0.1f + arg0 * 0.5f)
 				);
-			}
-			else {
+			} else {
 				Logger.LogError("No valid world specified for offline session.", session.Tag);
 				session.UpdateState(Status.Error, "No valid world specified", 1f);
 				return;
 			}
 
 			if (scene == null) {
-				Logger.LogError($"Failed to load scene for world {options.WorldIdentifier.ToString()} with version {options.WorldIdentifier.Version}", session.Tag);
-				session.UpdateState(Status.Error, $"Failed to load world '{options.WorldIdentifier.ToString()}'", 1f);
+				Logger.LogError($"Failed to load scene for world {options.Identifier.ToString()} with version {options.Identifier.GetVersion()}", session.Tag);
+				session.UpdateState(Status.Error, $"Failed to load world '{options.Identifier.ToString()}'", 1f);
 				return;
 			}
 
-			session.UpdateState(Status.Pending, $"World '{options.WorldIdentifier.ToString()}' loaded successfully", 0.65f);
+			session.UpdateState(Status.Pending, $"World '{options.Identifier.ToString()}' loaded successfully", 0.65f);
 
-			scene.Identifier = options.WorldIdentifier;
+			scene.Identifier = options.Identifier;
 			session.SetDimension(scene);
 
 			if (options.ChangeCurrent) {
-				session.UpdateState(Status.Pending, $"Setting world '{options.WorldIdentifier.ToString()}' as current", 0.8f);
+				session.UpdateState(Status.Pending, $"Setting world '{options.Identifier.ToString()}' as current", 0.8f);
 				await Main.SessionAPI.SetCurrent(session.Id);
 			}
 
-			session.UpdateState(Status.Ready, $"World '{options.WorldIdentifier.ToString()}' is ready", 1f);
+			session.UpdateState(Status.Ready, $"World '{options.Identifier.ToString()}' is ready", 1f);
 		}
 	}
 }

@@ -2,6 +2,7 @@ using System.Linq;
 using Cysharp.Threading.Tasks;
 using Nox.CCK.Properties;
 using Nox.CCK.Sessions;
+using Nox.CCK.Utils;
 using Nox.Controllers;
 using Nox.Entities;
 using Nox.Players;
@@ -21,7 +22,7 @@ namespace Nox.Offline.Runtime {
 
 		internal IState InterState;
 		internal Dimensions InterDimensions;
-		internal readonly Entities InterEntities;
+		readonly internal Entities InterEntities;
 		private readonly string _id;
 
 		public string Id
@@ -173,8 +174,9 @@ namespace Nox.Offline.Runtime {
 
 		public UnityEvent<IState> OnStateChanged { get; } = new();
 
-		public bool Match(IWorldIdentifier identifier)
-			=> InterDimensions.Identifier != null && InterDimensions.Identifier.Equals(identifier);
+		public bool Match(Identifier identifier)
+			=> InterDimensions.Identifier.IsValid()
+				&& InterDimensions.Identifier.Equals(identifier);
 
 		public UnityEvent<IPlayer, IPlayer> OnAuthorityTransferred { get; } = new();
 

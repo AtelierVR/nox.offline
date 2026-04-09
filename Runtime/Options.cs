@@ -8,7 +8,8 @@ namespace Nox.Offline.Runtime {
 	public class Options {
 		public static Options From(Dictionary<string, object> dict) {
 			var options = new Options();
-			if (dict == null) return options;
+			if (dict == null)
+				return options;
 			if (dict.TryGetValue("title", out var titleObj) && titleObj is string titleStr)
 				options.Title = titleStr;
 			if (dict.TryGetValue("thumbnail", out var thumbnailObj) && thumbnailObj is Texture2D thumbnailTex)
@@ -21,32 +22,26 @@ namespace Nox.Offline.Runtime {
 				options.ChangeCurrent = changeCurrentBool;
 			if (dict.TryGetValue("world", out var worldObj))
 				switch (worldObj) {
-					case WorldIdentifier worldId:
-						options.WorldType = 1;
-						options.WorldIdentifier = worldId;
+					case Identifier w:
+						options.WorldType  = 1;
+						options.Identifier = w;
 						break;
-					case ResourceIdentifier resId:
-						options.WorldType = 2;
-						options.WorldResource = resId;
+					case ResourceIdentifier r:
+						options.WorldType     = 2;
+						options.WorldResource = r;
 						break;
 				}
 
 			// WorldType=3 : chargement direct depuis le cache via hash, sans aucun fetch réseau
-			if (dict.TryGetValue("world_hash", out var worldHashObj) && worldHashObj is string worldHashStr && !string.IsNullOrEmpty(worldHashStr)) {
+			if (dict.TryGetValue("world_hash", out var o) && o is string s && !string.IsNullOrEmpty(s)) {
 				options.WorldType = 3;
-				options.WorldHash = worldHashStr;
-				if (dict.TryGetValue("world_identifier", out var worldIdObj))
-					switch (worldIdObj) {
-						case WorldIdentifier worldId:
-							options.WorldIdentifier = worldId;
-							break;
-						case IWorldIdentifier iWorldId:
-							options.WorldIdentifier = CCK.Worlds.WorldIdentifier.From(iWorldId);
-							break;
-						case string worldIdStr2 when !string.IsNullOrEmpty(worldIdStr2):
-							options.WorldIdentifier = CCK.Worlds.WorldIdentifier.From(worldIdStr2);
-							break;
-					}
+				options.WorldHash = s;
+				if (dict.TryGetValue("world_identifier", out var i))
+					options.Identifier = i switch {
+						Identifier w                           => w,
+						string w when !string.IsNullOrEmpty(w) => Identifier.Parse(w),
+						_                                      => options.Identifier
+					};
 			}
 
 			return options;
@@ -54,7 +49,7 @@ namespace Nox.Offline.Runtime {
 
 		public int WorldType = 0;
 
-		public IWorldIdentifier WorldIdentifier = Nox.CCK.Worlds.WorldIdentifier.Invalid;
+		public Identifier Identifier = Identifier.Invalid;
 		public ResourceIdentifier WorldResource = ResourceIdentifier.Invalid;
 
 		/// <summary>
