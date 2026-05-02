@@ -28,10 +28,23 @@ namespace Nox.Offline.Runtime {
 			if (options.WorldType == 1) {
 				session.UpdateState(Status.Pending, "Fetching world data...", 0.05f);
 
+				var version = options.Identifier.GetVersion();
+
+				if (version == ushort.MaxValue) {
+					var world = await Main.WorldAPI.Fetch(options.Identifier);
+					if (world == null) {
+						Logger.LogError($"Failed to fetch world data for {options.Identifier.ToString()}", session.Tag);
+						session.UpdateState(Status.Error, $"World '{options.Identifier.ToString()}' not found", 1f);
+						return;
+					}
+					if (world.Release != ushort.MaxValue)
+						version = world.Release;
+				}
+
 				var req = new AssetSearchRequest {
 					Engines   = new[] { EngineExtensions.CurrentEngine.GetEngineName() },
 					Platforms = new[] { PlatformExtensions.CurrentPlatform.GetPlatformName() },
-					Versions  = new[] { options.Identifier.GetVersion() },
+					Versions  = new[] { version },
 					Limit     = 1
 				};
 
