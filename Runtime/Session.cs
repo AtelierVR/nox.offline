@@ -72,8 +72,32 @@ namespace Nox.Offline.Runtime {
 			InterEntities?.Dispose();
 			InterDimensions?.Dispose();
 		}
+		private float _tickAccumulator;
+		private long _tickCounter;
+		private int _lastKnownTickRate;
+
+		private static int GetTargetTickRate() {
+			var fps = Application.targetFrameRate;
+			return fps > 0 ? fps : 60;
+		}
+
 		public void Update() {
-			// not needed in offline
+			var tickRate = GetTargetTickRate();
+
+			if (tickRate != _lastKnownTickRate) {
+				_lastKnownTickRate = tickRate;
+				foreach (var module in GetAllModules())
+					module.OnTickRateChanged(tickRate);
+			}
+
+			_tickAccumulator += Time.deltaTime;
+			var interval = 1f / tickRate;
+			while (_tickAccumulator >= interval) {
+				_tickAccumulator -= interval;
+				var tick = ++_tickCounter;
+				foreach (var module in GetAllModules())
+					module.OnTick(tick);
+			}
 		}
 
 		public async UniTask OnSelect(ISession old) {
