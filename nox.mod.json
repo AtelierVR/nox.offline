@@ -41,7 +41,7 @@
       "type": "depends"
     },
     {
-      "id": "world",
+      "id": "worlds",
       "type": "depends"
     }
   ],
