@@ -6,7 +6,7 @@
   ],
   "name": "Offline Sessions",
   "version": "1.0.0",
-  "description": "Provides offline session management.",
+  "description": "Offline session support without server connectivity.",
   "license": "GPL-3.0",
   "icon": null,
   "contact": {

@@ -1,5 +1,6 @@
 {
   "name": "nox.offline",
-  "displayName": "Nox - Offline",
-  "version": "1.0.0"
+  "displayName": "Nox - Offline Sessions",
+  "version": "1.0.0",
+  "description": "Offline session support without server connectivity."
 }
