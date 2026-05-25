@@ -45,22 +45,22 @@ namespace Nox.Offline.Runtime {
 			CoreAPI = null;
 		}
 
-		internal static IWorldAPI WorldAPI
+		static internal IWorldAPI WorldAPI
 			=> CoreAPI.ModAPI
 				.GetMod("worlds")
 				.GetInstance<IWorldAPI>();
 
-		internal static ISessionAPI SessionAPI
+		static internal ISessionAPI SessionAPI
 			=> CoreAPI.ModAPI
 				.GetMod("session")
 				.GetInstance<ISessionAPI>();
 
-		internal static IControllerAPI ControllerAPI
+		static internal IControllerAPI ControllerAPI
 			=> CoreAPI.ModAPI
 				.GetMod("controller")
 				.GetInstance<IControllerAPI>();
 
-		internal static IUserAPI UserAPI
+		static internal IUserAPI UserAPI
 			=> CoreAPI.ModAPI
 				.GetMod("users")
 				.GetInstance<IUserAPI>();
