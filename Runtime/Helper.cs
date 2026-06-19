@@ -37,8 +37,7 @@ namespace Nox.Offline.Runtime {
 						session.UpdateState(Status.Error, $"World '{options.Identifier.ToString()}' not found", 1f);
 						return;
 					}
-					if (world.Release != ushort.MaxValue)
-						version = world.Release;
+					version = world.Release.Value;
 				}
 
 				var req = new AssetSearchRequest {
