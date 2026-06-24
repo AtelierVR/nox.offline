@@ -57,7 +57,7 @@ namespace Nox.Offline.Runtime {
 
 		static internal IControllerAPI ControllerAPI
 			=> CoreAPI.ModAPI
-				.GetMod("controller")
+				.GetMod("controllers")
 				.GetInstance<IControllerAPI>();
 
 		static internal IUserAPI UserAPI
