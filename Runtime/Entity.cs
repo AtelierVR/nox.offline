@@ -79,7 +79,7 @@ namespace Nox.Offline.Runtime {
 		public void DestroyPhysical() {
 			if (!_physical)
 				return;
-			_physical.Destroy();
+			_physical.gameObject.DestroyImmediate();
 			_physical = null;
 			OnPhysicalDestroyed();
 		}
