@@ -129,6 +129,9 @@ namespace Nox.Offline.Runtime {
 		public void OnSceneLoaded(int index, IWorldDescriptor descriptor, GameObject anchor) {
 			Main.CoreAPI.EventAPI.Emit("session_scene_added", this, index, descriptor, anchor);
 
+			if (InterEntities.LocalPlayer is Player { NeedsRespawn: true } localPlayer)
+				localPlayer.Respawn();
+
 			var modules = descriptor.GetModules<ISessionModule>();
 			Logger.LogDebug($"OnDescriptorAdded: {descriptor} with {modules.Length} modules", descriptor as Object, Tag);
 
