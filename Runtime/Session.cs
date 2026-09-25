@@ -5,12 +5,15 @@ using Nox.CCK.Sessions;
 using Nox.CCK.Utils;
 using Nox.Controllers;
 using Nox.Entities;
+using Nox.CCK.Nameplate;
 using Nox.Players;
 using Nox.Sessions;
 using Nox.Worlds;
 using UnityEngine;
 using UnityEngine.Events;
 using Logger = Nox.CCK.Utils.Logger;
+using Keys = Nox.CCK.Nameplate.Constants;
+using Nox.Users;
 
 namespace Nox.Offline.Runtime {
 	public sealed class Session : BaseEditablePropertyObject, ISession {
@@ -100,6 +103,29 @@ namespace Nox.Offline.Runtime {
 			}
 		}
 
+        public void OnUserUpdated(IUser user) 
+			=> PushNameplateUser(user);
+
+		/// <summary>
+		/// Pushes the local profile onto the active controller's nameplate: its plate is only a handle
+		/// (it carries the client-wide visibility), so the session is the one providing the user.
+		/// </summary>
+		private void PushNameplateUser(IUser user) {
+			if (Main.ControllerAPI?.Current is not INameplateHolder holder)
+				return;
+
+			var plate = holder.Nameplate;
+			if (!plate.IsAlive())
+				return;
+
+			plate.Set(Keys.USER, user);
+
+			// The session's player may carry a customised display (relay naming): it overrides the
+			// profile's own name, and clears back to it when there is none.
+			var display = LocalPlayer?.Display;
+			plate.Set(Keys.DISPLAY, display == user?.Display ? null : display);
+		}
+
 		public async UniTask OnSelect(ISession old) {
 			Logger.LogDebug("Selecting session", tag: Tag);
 
@@ -167,8 +193,10 @@ namespace Nox.Offline.Runtime {
 				module.OnSceneUnloaded(index);
 		}
 
-		public void OnControllerChanged(IController controller)
-			=> InterEntities.LocalPlayer?.UpdateController(controller);
+		public void OnControllerChanged(IController controller) {
+			InterEntities.LocalPlayer?.UpdateController(controller);
+			PushNameplateUser(Main.UserAPI.Current);
+		}
 
 		public async UniTask OnDeselect(ISession @new) {
 			Logger.LogDebug("Deselecting session", tag: Tag);
@@ -298,5 +326,5 @@ namespace Nox.Offline.Runtime {
 			foreach (var module in GetAllModules())
 				module.OnPlayerVisibilityChanged(player, isVisible);
 		}
-	}
+    }
 }

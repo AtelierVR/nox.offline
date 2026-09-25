@@ -47,12 +47,21 @@
       "id": "worlds",
       "type": "depends",
       "register": "git+https://github.com/AtelierVR/nox.worlds.git"
+    },
+    {
+      "id": "nameplate",
+      "type": "depends",
+      "register": "git+https://github.com/AtelierVR/nox.nameplate.git"
     }
   ],
   "constraints": [
     {
       "type": "after",
       "id": "session"
+    },
+    {
+      "type": "after",
+      "id": "nameplate"
     }
   ],
   "entrypoints": {

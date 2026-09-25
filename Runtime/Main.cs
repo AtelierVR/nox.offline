@@ -25,7 +25,8 @@ namespace Nox.Offline.Runtime {
 		public void OnInitializeMain(IMainModCoreAPI api) {
 			CoreAPI = api;
 			_events = new[] {
-				api.EventAPI.Subscribe("controller_changed", OnControllerChanged)
+				api.EventAPI.Subscribe("controller_changed", OnControllerChanged),
+				api.EventAPI.Subscribe("user_update", OnUserUpdate)
 			};
 			SessionAPI.Register(this);
 		}
@@ -35,6 +36,14 @@ namespace Nox.Offline.Runtime {
 			if (!SessionAPI.TryGet(SessionAPI.Current, out var s)) return;
 			if (s is not Session session) return;
 			session.OnControllerChanged(controller);
+		}
+
+		/// <summary>Refresh the plate when the local profile changes (login, rename...).</summary>
+		private static void OnUserUpdate(EventData context) {
+			if (!context.TryGet(0, out IUser user)) return;
+			if (!SessionAPI.TryGet(SessionAPI.Current, out var s)) return;
+			if (s is not Session session) return;
+			session.OnUserUpdated(user);
 		}
 
 		public void OnDisposeMain() {
