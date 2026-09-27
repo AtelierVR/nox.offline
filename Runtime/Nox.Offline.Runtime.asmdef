@@ -14,7 +14,8 @@
     "Nox.Controllers",
     "Nox.Worlds.Spawns",
     "Nox.Nameplate",
-    "Nox.CCK.Nameplate"
+    "Nox.CCK.Nameplate",
+    "Nox.Audio"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

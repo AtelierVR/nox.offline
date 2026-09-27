@@ -102,6 +102,9 @@ namespace Nox.Offline.Runtime {
 				foreach (var module in GetAllModules())
 					module.OnTick(tick);
 			}
+
+			foreach (var player in InterEntities.GetEntities<Player>())
+				player?.OnUpdate();
 		}
 
         public void OnUserUpdated(IUser user) 

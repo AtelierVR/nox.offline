@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using DefaultNamespace;
+using Nox.Audio.Players;
 using Nox.CCK.Players;
 using Nox.CCK.Utils;
 using Nox.Controllers;
@@ -11,7 +12,7 @@ using UnityEngine;
 using Logger = Nox.CCK.Utils.Logger;
 
 namespace Nox.Offline.Runtime {
-	public class Player : Entity, IPlayer {
+	public partial class Player : Entity, IPlayer, ILocalPlayerVoice {
 		public Player(Entities context, int id) : base(context, id) {
 			GetOrCreatePart(PlayerRig.Base.ToIndex());
 		}
@@ -147,6 +148,14 @@ namespace Nox.Offline.Runtime {
 
 		override protected void OnPhysicalDestroyed() {
 			Context.Context.HandlePlayerVisibilityChanged(this, false);
+		}
+
+		/// <summary>
+		/// Called every frame by <see cref="Session.Update"/>: refreshes what the local player feeds
+		/// to the session's views (its nameplate, ...).
+		/// </summary>
+		internal void OnUpdate() {
+			UpdateNameplate();
 		}
 
 		public override string ToString()
