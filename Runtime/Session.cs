@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
 using Nox.CCK.Properties;
@@ -119,6 +120,10 @@ namespace Nox.Offline.Runtime {
 				return;
 
 			plate.Set(Keys.USER, user);
+
+			// The local profile has no relation to itself (IUser.Relations is null for the authenticated
+			// user): the relation row stays empty.
+			plate.Set(Keys.STATUS, new Dictionary<string, string>());
 
 			// The session's player may carry a customised display (relay naming): it overrides the
 			// profile's own name, and clears back to it when there is none.
