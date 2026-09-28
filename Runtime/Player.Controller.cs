@@ -4,8 +4,8 @@ using Nox.Controllers;
 
 namespace Nox.Offline.Runtime {
 	/// <summary>
-	/// Controller binding of the offline player: pushes the player state (movement abilities,
-	/// nameplate visibility) onto the active controller.
+	/// Controller binding of the offline player: pushes the player state (movement abilities, team
+	/// colour, health bar) onto the active controller.
 	/// </summary>
 	public partial class Player {
 		/// <summary>
@@ -21,9 +21,9 @@ namespace Nox.Offline.Runtime {
 		/// plate. Called when the session becomes current (<c>ISessionAPI.SetCurrent</c> →
 		/// <c>Session.OnSelect</c>) and again on every data change while it is current.
 		/// <para>
-		/// The plate <b>visibility</b> is deliberately not pushed here: it is client-wide and owned by
-		/// the controller itself (its menu provider drives <c>Keys.VISIBLE</c>), so no entity — thus no
-		/// script — can influence it.
+		/// The plate <b>visibility</b> is deliberately not pushed here: the plate of the local client is
+		/// driven by the controller itself (its menu provider pushes <c>Keys.VISIBLE</c> on it), and the
+		/// plates of the remote players by the scripts.
 		/// </para>
 		internal void ApplyToController(IController controller) {
 			if (controller == null)
