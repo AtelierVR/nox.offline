@@ -17,7 +17,7 @@ using Keys = Nox.CCK.Nameplate.Constants;
 using Nox.Users;
 
 namespace Nox.Offline.Runtime {
-	public sealed class Session : BaseEditablePropertyObject, ISession {
+	public sealed partial class Session : BaseEditablePropertyObject, ISession, ITeamSession {
 		internal Session(string id) {
 			_id           = id;
 			InterEntities = new Entities(this);
