@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Nox.CCK.Entities;
 using Nox.CCK.Utils;
 using Nox.Entities;
 
@@ -7,6 +8,7 @@ namespace Nox.Offline.Runtime {
 		internal readonly Entities Context;
 		private Physical _physical;
 		internal readonly List<IProperty> Properties = new();
+		private readonly DataContainer _data = new();
 
 		protected Entity(Entities context, int id) {
 			Id      = id;
@@ -30,6 +32,9 @@ namespace Nox.Offline.Runtime {
 			property = null;
 			return false;
 		}
+
+		public IDataContainer Data
+			=> _data;
 
 		virtual protected Physical InstantiatePhysical() {
 			Logger.LogWarning($"Entity {Id} does not implement {nameof(InstantiatePhysical)}, cannot create physical representation.", tag: nameof(Entity));
@@ -86,6 +91,7 @@ namespace Nox.Offline.Runtime {
 
 		public void Dispose() {
 			DestroyPhysical();
+			_data.Clear();
 			Context.UnregisterEntity(this);
 		}
 

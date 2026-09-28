@@ -6,15 +6,17 @@ using Nox.CCK.Players;
 using Nox.CCK.Utils;
 using Nox.Controllers;
 using Nox.Entities;
+using Nox.Nameplate;
 using Nox.Players;
 using Nox.Worlds.Spawns;
 using UnityEngine;
 using Logger = Nox.CCK.Utils.Logger;
 
 namespace Nox.Offline.Runtime {
-	public partial class Player : Entity, IPlayer, ILocalPlayerVoice {
+	public partial class Player : Entity, IPlayer, ILocalPlayerVoice, INameplateEntity {
 		public Player(Entities context, int id) : base(context, id) {
 			GetOrCreatePart(PlayerRig.Base.ToIndex());
+			BindDataChanges();
 		}
 
 		private readonly Dictionary<ushort, Part> _parts = new();
@@ -54,6 +56,8 @@ namespace Nox.Offline.Runtime {
 			// restore parts
 			foreach (var part in _parts.Values)
 				part.Restore(controller);
+
+			ApplyToController(controller);
 		}
 
 		internal void RemoveController() {
