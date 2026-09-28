@@ -17,7 +17,7 @@ using Keys = Nox.CCK.Nameplate.Constants;
 using Nox.Users;
 
 namespace Nox.Offline.Runtime {
-	public sealed partial class Session : BaseEditablePropertyObject, ISession, ITeamSession {
+	public sealed partial class Session : BaseEditablePropertyObject, ISession, ITeamSession, IPhysicalSession {
 		internal Session(string id) {
 			_id           = id;
 			InterEntities = new Entities(this);
@@ -27,6 +27,13 @@ namespace Nox.Offline.Runtime {
 		internal IState InterState;
 		internal Dimensions InterDimensions;
 		readonly internal Entities InterEntities;
+
+		/// <summary>Session-scoped key-value data container.</summary>
+		private readonly DataContainer _data = new();
+
+		public IDataContainer Data
+			=> _data;
+
 		private readonly string _id;
 
 		public string Id
@@ -39,8 +46,8 @@ namespace Nox.Offline.Runtime {
 			=> InterEntities;
 
 
-		internal void UpdateState(Status stt, string msg, float pg)
-			=> State = new State(stt, msg, pg);
+		internal void UpdateState(Status stt, string msg, float pg, bool cancelable = false)
+			=> State = new State(stt, msg, pg, cancelable);
 
 		internal void SetDimension(IRuntimeWorld scene) {
 			InterDimensions?.Dispose();
@@ -73,6 +80,7 @@ namespace Nox.Offline.Runtime {
 		public async UniTask Dispose() {
 			Logger.LogDebug("Disposing session", tag: Tag);
 			await UniTask.Yield();
+			_data.Dispose();
 			InterEntities?.Dispose();
 			InterDimensions?.Dispose();
 		}

@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using Nox.CCK.Entities;
+using Nox.CCK.Sessions;
 using Nox.CCK.Utils;
 using Nox.Entities;
 
