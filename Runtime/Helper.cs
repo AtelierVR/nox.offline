@@ -17,6 +17,7 @@ namespace Nox.Offline.Runtime {
 			session.SetTitle(options.Title);
 			session.SetThumbnail(options.Thumbnail);
 			session.SetDisposeOnChange(options.DisposeOnChange);
+			session.NotifyInfoUpdated();
 			session.UpdateState(Status.Pending, "Preparing...", 0f);
 			session.Prepare(options).Forget();
 			return session;

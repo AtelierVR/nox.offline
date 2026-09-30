@@ -54,6 +54,10 @@ namespace Nox.Offline.Runtime {
 			InterDimensions = new Dimensions(this, scene);
 		}
 
+		/// <summary>Signals that this session's information is available/changed (<c>session_updated</c>).</summary>
+		internal void NotifyInfoUpdated()
+			=> Main.CoreAPI.EventAPI.Emit("session_updated", this);
+
 		internal string Tag
 			=> GetType().Name + $"_{Id}";
 
