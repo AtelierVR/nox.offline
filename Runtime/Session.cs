@@ -249,9 +249,13 @@ namespace Nox.Offline.Runtime {
 
 		public UnityEvent<IState> OnStateChanged { get; } = new();
 
-		public bool Match(Identifier identifier)
-			=> InterDimensions.Identifier.IsValid()
-				&& InterDimensions.Identifier.Equals(identifier);
+		public bool Match(Identifier identifier) {
+			// The dimension is only created once the world is loaded: before that, fall back
+			// on the world stored at creation so a pending session can still be matched.
+			if (InterDimensions is { Identifier: var current } && current.IsValid())
+				return current.Equals(identifier);
+			return this.GetWorld().Equals(identifier);
+		}
 
 		public UnityEvent<IPlayer, IPlayer> OnAuthorityTransferred { get; } = new();
 

@@ -1,7 +1,5 @@
-using System.Linq;
 using Cysharp.Threading.Tasks;
 using Nox.CCK.Sessions;
-using Nox.CCK.Utils;
 using Nox.CCK.Worlds;
 using Nox.CCK.Network.Assets;
 using Nox.Sessions;
@@ -15,6 +13,7 @@ namespace Nox.Offline.Runtime {
 
 		public static ISession Create(Options options) {
 			var session = new Session(string.Format(IdFormat, System.Guid.NewGuid()));
+			session.SetWorld(options.Identifier);
 			session.SetTitle(options.Title);
 			session.SetThumbnail(options.Thumbnail);
 			session.SetDisposeOnChange(options.DisposeOnChange);
