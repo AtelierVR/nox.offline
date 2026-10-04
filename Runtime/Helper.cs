@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 using Nox.CCK.Sessions;
 using Nox.CCK.Utils;
 using Nox.CCK.Worlds;
+using Nox.CCK.Network.Assets;
 using Nox.Sessions;
 using Nox.Worlds;
 using Logger = Nox.CCK.Utils.Logger;
@@ -29,48 +30,36 @@ namespace Nox.Offline.Runtime {
 			if (options.WorldType == 1) {
 				session.UpdateState(Status.Pending, "Fetching world data...", 0.05f);
 
-				var version = options.Identifier.GetVersion();
+				var bundle = await Main.WorldAPI.ResolveBundle(options.Identifier);
 
-				if (version == ushort.MaxValue) {
-					var world = await Main.WorldAPI.Fetch(options.Identifier);
-					if (world == null) {
-						Logger.LogError($"Failed to fetch world data for {options.Identifier.ToString()}", session.Tag);
-						session.UpdateState(Status.Error, $"World '{options.Identifier.ToString()}' not found", 1f);
-						return;
-					}
-					version = world.Release.Value;
+				if (bundle == null || string.IsNullOrEmpty(bundle.Url)) {
+					Logger.LogError($"Failed to find a compatible bundle for world {options.Identifier}", session.Tag);
+					session.UpdateState(Status.Error, $"World '{options.Identifier.ToString()}' not found", 1f);
+					return;
 				}
 
-				var req = new AssetSearchRequest {
-					Engines   = new[] { EngineExtensions.CurrentEngine.GetEngineName() },
-					Platforms = new[] { PlatformExtensions.CurrentPlatform.GetPlatformName() },
-					Versions  = new[] { version },
-					Limit     = 1
-				};
+				var hash = bundle.CacheKey();
 
-				var asset = (await Main.WorldAPI.SearchAssets(options.Identifier, req))
-					?.Items.FirstOrDefault();
-
-				if (asset == null) {
-					Logger.LogError($"Failed to find asset for world {options.Identifier.ToString()} with version {options.Identifier.GetVersion()}", session.Tag);
+				if (string.IsNullOrEmpty(hash)) {
+					Logger.LogError($"The bundle of world {options.Identifier} carries no hash", session.Tag);
 					session.UpdateState(Status.Error, $"World '{options.Identifier.ToString()}' not found", 1f);
 					return;
 				}
 
 				session.UpdateState(Status.Pending, $"Preparing world '{options.Identifier.ToString()}'...", 0.1f);
 
-				if (!Main.WorldAPI.HasInCache(asset.Hash)) {
+				if (!Main.WorldAPI.HasInCache(hash)) {
 					session.UpdateState(Status.Pending, $"Downloading world '{options.Identifier.ToString()}'...", 0.15f);
 					var download = Main.WorldAPI.DownloadToCache(
-						asset.Url,
-						hash: asset.Hash,
+						bundle.Url,
+						hash: hash,
 						progress: arg0 => session.UpdateState(Status.Pending, $"Downloading world '{options.Identifier.ToString()}'...", 0.15f + arg0 * 0.45f)
 					);
 					await download.Start();
 				}
 
 				session.UpdateState(Status.Pending, $"Loading world '{options.Identifier}'...", 0.6f);
-				scene = await Main.WorldAPI.LoadFromCache(asset.Hash);
+				scene = await Main.WorldAPI.LoadFromCache(hash);
 			} else if (options.WorldType == 2) {
 				session.UpdateState(Status.Pending, "Loading world resource...", 0.1f);
 
