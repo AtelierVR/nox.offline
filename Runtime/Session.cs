@@ -100,9 +100,13 @@ namespace Nox.Offline.Runtime {
 		public void Update() {
 			var tickRate = GetTargetTickRate();
 
+			// One lookup for the whole frame: the module set cannot change while the tick loop runs,
+			// and asking for it per tick rebuilt the list on every iteration of the while loop.
+			var modules = GetAllModules();
+
 			if (tickRate != _lastKnownTickRate) {
 				_lastKnownTickRate = tickRate;
-				foreach (var module in GetAllModules())
+				foreach (var module in modules)
 					module.OnTickRateChanged(tickRate);
 			}
 
@@ -111,7 +115,7 @@ namespace Nox.Offline.Runtime {
 			while (_tickAccumulator >= interval) {
 				_tickAccumulator -= interval;
 				var tick = ++_tickCounter;
-				foreach (var module in GetAllModules())
+				foreach (var module in modules)
 					module.OnTick(tick);
 			}
 
@@ -259,11 +263,34 @@ namespace Nox.Offline.Runtime {
 
 		public UnityEvent<IPlayer, IPlayer> OnAuthorityTransferred { get; } = new();
 
-		private ISessionModule[] GetAllModules()
-			=> InterDimensions.GetDescriptors()
-				.Where(e => e != null)
-				.SelectMany(d => d.GetModules<ISessionModule>())
-				.ToArray();
+		/// <summary>
+		/// Every session module of the loaded dimensions, flattened.
+		/// <para>
+		/// Flat loop instead of
+		/// <c>GetDescriptors().Where(e =&gt; e != null).SelectMany(d =&gt; d.GetModules&lt;ISessionModule&gt;()).ToArray()</c>:
+		/// that chain allocated a closure and two iterators per call, and the generic
+		/// <c>GetModules&lt;T&gt;()</c> copied the descriptor's array a second time through
+		/// <c>OfType&lt;T&gt;().ToArray()</c>. The non-generic <c>GetModules()</c> hands out the stored array,
+		/// so the type test happens here, in one pass.
+		/// </para>
+		/// </summary>
+		private ISessionModule[] GetAllModules() {
+			var modules     = new List<ISessionModule>();
+			var descriptors = InterDimensions.GetDescriptors();
+
+			for (var i = 0; i < descriptors.Length; i++) {
+				var descriptor = descriptors[i];
+				if (descriptor == null)
+					continue;
+
+				var descriptorModules = descriptor.GetModules();
+				for (var j = 0; j < descriptorModules.Length; j++)
+					if (descriptorModules[j] is ISessionModule module)
+						modules.Add(module);
+			}
+
+			return modules.ToArray();
+		}
 
 		public void HandlePlayerJoined(IPlayer player) {
 			Logger.LogDebug($"OnPlayerJoined: {player}", tag: Tag);
