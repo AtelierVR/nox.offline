@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DefaultNamespace;
 using Nox.Audio.Players;
-using Nox.CCK.Players;
+using Nox.CCK.Entities;
 using Nox.CCK.Utils;
 using Nox.Controllers;
 using Nox.Entities;
@@ -14,8 +14,8 @@ using Logger = Nox.CCK.Utils.Logger;
 
 namespace Nox.Offline.Runtime {
 	public partial class Player : Entity, IPlayer, ILocalPlayerVoice, INameplateEntity {
-		public Player(Entities context, int id) : base(context, id) {
-			GetOrCreatePart(PlayerRig.Base.ToIndex());
+		public Player(Entities context, uint id) : base(context, id) {
+			GetOrCreatePart(EntityRig.Base.ToIndex());
 			BindDataChanges();
 		}
 
@@ -122,28 +122,28 @@ namespace Nox.Offline.Runtime {
 		}
 
 		public Vector3 Position {
-			get => _parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p) ? p.Position : Vector3.zero;
-			set => GetOrCreatePart(PlayerRig.Base.ToIndex()).Position = value;
+			get => _parts.TryGetValue(EntityRig.Base.ToIndex(), out var p) ? p.Position : Vector3.zero;
+			set => GetOrCreatePart(EntityRig.Base.ToIndex()).Position = value;
 		}
 
 		public Quaternion Rotation {
-			get => _parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p) ? p.Rotation : Quaternion.identity;
-			set => GetOrCreatePart(PlayerRig.Base.ToIndex()).Rotation = value;
+			get => _parts.TryGetValue(EntityRig.Base.ToIndex(), out var p) ? p.Rotation : Quaternion.identity;
+			set => GetOrCreatePart(EntityRig.Base.ToIndex()).Rotation = value;
 		}
 
 		public Vector3 Scale {
-			get => _parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p) ? p.Scale : Vector3.one;
-			set => GetOrCreatePart(PlayerRig.Base.ToIndex()).Scale = value;
+			get => _parts.TryGetValue(EntityRig.Base.ToIndex(), out var p) ? p.Scale : Vector3.one;
+			set => GetOrCreatePart(EntityRig.Base.ToIndex()).Scale = value;
 		}
 
 		public Vector3 Velocity {
-			get => _parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p) ? p.Velocity : Vector3.zero;
-			set => GetOrCreatePart(PlayerRig.Base.ToIndex()).Velocity = value;
+			get => _parts.TryGetValue(EntityRig.Base.ToIndex(), out var p) ? p.Velocity : Vector3.zero;
+			set => GetOrCreatePart(EntityRig.Base.ToIndex()).Velocity = value;
 		}
 
 		public Vector3 Angular {
-			get => _parts.TryGetValue(PlayerRig.Base.ToIndex(), out var p) ? p.Angular : Vector3.zero;
-			set => GetOrCreatePart(PlayerRig.Base.ToIndex()).Angular = value;
+			get => _parts.TryGetValue(EntityRig.Base.ToIndex(), out var p) ? p.Angular : Vector3.zero;
+			set => GetOrCreatePart(EntityRig.Base.ToIndex()).Angular = value;
 		}
 		
 		override protected void OnPhysicalCreated() {

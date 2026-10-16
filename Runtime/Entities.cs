@@ -6,16 +6,16 @@ using UnityEngine.Events;
 
 namespace Nox.Offline.Runtime {
 	public class Entities : IEntities {
-		public const int LocalPlayerId   = 0;
-		public const int InvalidEntityId = -1;
+		public const uint LocalPlayerId   = 0;
+		public const uint InvalidEntityId = uint.MaxValue;
 
 		internal Entities(Session context)
 			=> Context = context;
 
 		internal readonly Session Context;
 
-		public int MasterId { get; set; } = InvalidEntityId;
-		public int LocalId  { get; set; } = InvalidEntityId;
+		public uint MasterId { get; set; } = InvalidEntityId;
+		public uint LocalId  { get; set; } = InvalidEntityId;
 
 		public Player LocalPlayer
 			=> GetEntity<Player>(LocalId);
@@ -24,7 +24,7 @@ namespace Nox.Offline.Runtime {
 			=> GetEntity<Player>(MasterId);
 
 
-		private readonly Dictionary<int, Entity> _entities = new();
+		private readonly Dictionary<uint, Entity> _entities = new();
 
 		internal void RegisterEntity(Entity entity) {
 			if (!_entities.TryAdd(entity.Id, entity)) {
@@ -46,10 +46,10 @@ namespace Nox.Offline.Runtime {
 			OnEntityRemoved.Invoke(entity);
 		}
 
-		public IEntity GetEntity(int id)
+		public IEntity GetEntity(uint id)
 			=> _entities.GetValueOrDefault(id);
 
-		public T GetEntity<T>(int id) where T : IEntity
+		public T GetEntity<T>(uint id) where T : IEntity
 			=> GetEntity(id) is T e ? e : default;
 
 		public IEntity[] GetEntities()
@@ -58,10 +58,10 @@ namespace Nox.Offline.Runtime {
 		public T[] GetEntities<T>() where T : IEntity
 			=> _entities.Values.OfType<T>().ToArray();
 
-		public bool HasEntity(int id)
+		public bool HasEntity(uint id)
 			=> _entities.ContainsKey(id);
 
-		public bool HasEntity<T>(int id) where T : IEntity
+		public bool HasEntity<T>(uint id) where T : IEntity
 			=> GetEntity(id) is T;
 
 		public int GetCount()
@@ -80,7 +80,7 @@ namespace Nox.Offline.Runtime {
 			_entities.Clear();
 		}
 
-		private int NextEntityId()
+		private uint NextEntityId()
 			=> _entities.Keys.Count != 0
 				? _entities.Keys.Max() + 1
 				: 1;

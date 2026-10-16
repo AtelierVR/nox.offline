@@ -10,13 +10,13 @@ namespace Nox.Offline.Runtime {
 		internal readonly List<IProperty> Properties = new();
 		private readonly DataContainer _data = new();
 
-		protected Entity(Entities context, int id) {
+		protected Entity(Entities context, uint id) {
 			Id      = id;
 			Context = context;
 			context.RegisterEntity(this);
 		}
 
-		public int Id { get; }
+		public uint Id { get; }
 
 		public IProperty[] GetProperties()
 			=> Properties.ToArray();
