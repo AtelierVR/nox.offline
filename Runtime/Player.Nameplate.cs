@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Nox.CCK.Entities;
 using Nox.CCK.Nameplate;
 using Nox.Nameplate;
@@ -63,10 +64,15 @@ namespace Nox.Offline.Runtime {
 		}
 
 		/// <summary>
-		/// Pushes the level of the captured audio (<see cref="Audio"/>, the microphone bound by the
-		/// controller's connector) onto the controller's plate (<c>Keys.VOICE</c>), driving the alpha
-		/// of the plate's voice image. Called every frame by <see cref="OnUpdate"/>: the plate ignores
-		/// an unchanged value.
+		/// Pushes the level of the captured audio (<see cref="Audio"/>, the microphone bound by
+		/// <see cref="BindVoiceEvents"/>) onto the controller's plate (<c>Keys.VOICE</c>), driving the alpha
+		/// of the plate's voice image, then the voice status of the local player (<c>Keys.STATUS</c>:
+		/// muted while self-muted, deafened while the voice channel is muted). Called every frame by
+		/// <see cref="OnUpdate"/>: the plate ignores an unchanged value.
+		/// <para>
+		/// Offline there is no listener-mute relation to display (the player is alone), so these are
+		/// its own announced states, exactly what the relay feeds for a remote player.
+		/// </para>
 		/// </summary>
 		internal void UpdateNameplate() {
 			if (Main.ControllerAPI?.Current is not INameplateHolder holder)
@@ -77,6 +83,14 @@ namespace Nox.Offline.Runtime {
 				return;
 
 			plate.Set(Keys.VOICE, Audio?.Level ?? 0f);
+
+			var status = new Dictionary<string, string>();
+			if (IsSelfMuted)
+				status[NameplateExtensions.StatusIcon("mute")] = "mute";
+			if (IsDeafened)
+				status[NameplateExtensions.StatusIcon("deaf")] = "deaf";
+
+			plate.Set(Keys.STATUS, status);
 		}
 	}
 }

@@ -18,6 +18,7 @@
                        "Nox.Nameplate",
                        "Nox.CCK.Nameplate",
                        "Nox.Audio",
+                       "Nox.CCK.Audio",
                        "Nox.CCK.Network"
                    ],
     "includePlatforms":  [

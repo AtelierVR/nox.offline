@@ -17,6 +17,13 @@ namespace Nox.Offline.Runtime {
 		public Player(Entities context, uint id) : base(context, id) {
 			GetOrCreatePart(EntityRig.Base.ToIndex());
 			BindDataChanges();
+			BindVoiceEvents();
+		}
+
+		/// <summary>Releases the voice resources with the player itself.</summary>
+		public override void Dispose() {
+			UnbindVoiceEvents();
+			base.Dispose();
 		}
 
 		private readonly Dictionary<ushort, Part> _parts = new();

@@ -89,7 +89,7 @@ namespace Nox.Offline.Runtime {
 			OnPhysicalDestroyed();
 		}
 
-		public void Dispose() {
+		public virtual void Dispose() {
 			DestroyPhysical();
 			_data.Clear();
 			Context.UnregisterEntity(this);

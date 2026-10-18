@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using Nox.Audio;
+using Nox.CCK.Audio;
 using Nox.CCK.Mods.Cores;
 using Nox.CCK.Mods.Events;
 using Nox.Controllers;
@@ -22,8 +24,16 @@ namespace Nox.Offline.Runtime {
 		internal static IMainModCoreAPI     CoreAPI;
 		private        EventSubscription[] _events = Array.Empty<EventSubscription>();
 
+		/// <summary>Voice volume/mute channel of the offline session (same one the relay uses).</summary>
+		static internal ChannelRegister VoiceRegister;
+
 		public void OnInitializeMain(IMainModCoreAPI api) {
 			CoreAPI = api;
+
+			// The voice channel is session-scoped: offline must register it too, otherwise the
+			// deafen key, the deafen state and every listener of "voice" find no channel at all.
+			VoiceRegister = new ChannelRegister("voice", new[] { "general" }, api);
+
 			_events = new[] {
 				api.EventAPI.Subscribe("controller_changed", OnControllerChanged),
 				api.EventAPI.Subscribe("user_update", OnUserUpdate)
@@ -51,6 +61,10 @@ namespace Nox.Offline.Runtime {
 			foreach (var ev in _events)
 				CoreAPI.EventAPI.Unsubscribe(ev);
 			_events  = Array.Empty<EventSubscription>();
+
+			VoiceRegister?.Dispose();
+			VoiceRegister = null;
+
 			CoreAPI = null;
 		}
 
@@ -73,5 +87,17 @@ namespace Nox.Offline.Runtime {
 			=> CoreAPI.ModAPI
 				.GetMod("users")
 				.GetInstance<IUserAPI>();
+
+		/// <summary>Audio API of the audio mod (deafen state).</summary>
+		static internal IAudioAPI AudioAPI
+			=> CoreAPI?.ModAPI?
+				.GetMod("audio")
+				?.GetInstance<IAudioAPI>();
+
+		/// <summary>Microphone API of the audio mod (the device the local player captures).</summary>
+		static internal IMicrophoneAPI MicrophoneAPI
+			=> CoreAPI?.ModAPI?
+				.GetMod("audio")
+				?.GetInstance<IMicrophoneAPI>();
 	}
 }
