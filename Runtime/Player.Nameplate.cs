@@ -66,16 +66,17 @@ namespace Nox.Offline.Runtime {
 		/// <summary>
 		/// Pushes the level of the captured audio (<see cref="Audio"/>, the microphone bound by
 		/// <see cref="BindVoiceEvents"/>) onto the controller's plate (<c>Keys.VOICE</c>), driving the alpha
-		/// of the plate's voice image, then the voice status of the local player (<c>Keys.STATUS</c>:
-		/// muted while self-muted, deafened while the voice channel is muted). Called every frame by
-		/// <see cref="OnUpdate"/>: the plate ignores an unchanged value.
+		/// of the plate's voice image. Called every frame by <see cref="OnUpdate"/>: the plate ignores an
+		/// unchanged value.
 		/// <para>
-		/// Offline there is no listener-mute relation to display (the player is alone), so these are
-		/// its own announced states, exactly what the relay feeds for a remote player.
+		/// The voice status (<c>Keys.STATUS</c>) is not pushed here: it only changes when the self-mute or the
+		/// deafen state changes, which announce themselves (see <see cref="PushNameplateStatus"/>).
 		/// </para>
 		/// </summary>
 		internal void UpdateNameplate() {
-			if (Main.ControllerAPI?.Current is not INameplateHolder holder)
+			// The controller of the player is the one it was bound to (see SetController): resolving
+			// Main.ControllerAPI here walked the mod list again on every frame.
+			if (_controller is not INameplateHolder holder)
 				return;
 
 			var plate = holder.Nameplate;
@@ -83,14 +84,39 @@ namespace Nox.Offline.Runtime {
 				return;
 
 			plate.Set(Keys.VOICE, Audio?.Level ?? 0f);
+		}
 
-			var status = new Dictionary<string, string>();
-			if (IsSelfMuted)
-				status[NameplateExtensions.StatusIcon("mute")] = "mute";
-			if (IsDeafened)
-				status[NameplateExtensions.StatusIcon("deaf")] = "deaf";
+		/// <summary>
+		/// Pushes the voice status of the player onto the controller's plate (<c>Keys.STATUS</c>: muted while
+		/// self-muted, deafened while the voice channel is muted). Called when the state changes — self-mute,
+		/// deafen — and when the plate is taken (see <see cref="ApplyToController"/>), never per frame.
+		/// <para>
+		/// Offline there is no listener-mute relation to display (the player is alone), so these are
+		/// its own announced states, exactly what the relay feeds for a remote player.
+		/// </para>
+		/// </summary>
+		internal void PushNameplateStatus() {
+			if (_controller is not INameplateHolder holder)
+				return;
+
+			var plate = holder.Nameplate;
+			if (!plate.IsAlive())
+				return;
+
+			var muted    = IsSelfMuted;
+			var deafened = IsDeafened;
+
+			var status = new Dictionary<string, string>(muted ? 2 : deafened ? 1 : 0);
+			if (muted)
+				status[MuteIcon] = "mute";
+			if (deafened)
+				status[DeafIcon] = "deaf";
 
 			plate.Set(Keys.STATUS, status);
 		}
+
+		/// <summary>Status icon keys, resolved once: <see cref="NameplateExtensions.StatusIcon"/> builds an id.</summary>
+		private static readonly string MuteIcon = NameplateExtensions.StatusIcon("mute").ToString();
+		private static readonly string DeafIcon = NameplateExtensions.StatusIcon("deaf").ToString();
 	}
 }

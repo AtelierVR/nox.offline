@@ -44,6 +44,7 @@ namespace Nox.Offline.Runtime {
 			if (controller is INameplateHolder holder && holder.Nameplate.IsAlive()) {
 				PushHealthbar(holder.Nameplate);
 				PushTeam(holder.Nameplate);
+				PushNameplateStatus();
 			}
 		}
 

@@ -19,7 +19,14 @@ namespace Nox.Offline.Runtime {
 					? null
 					: Context.Context?.GetTeam(id);
 			}
-			set => Data.Set("team", value?.Id ?? EntityConstants.NoTeam);
+			set {
+				var previous = Team;
+				var id = value?.Id ?? EntityConstants.NoTeam;
+				Data.Set("team", id);
+				if (previous?.Id == id)
+					return;
+				Context.Context?.NotifyTeamChanged(this);
+			}
 		}
 
 		#endregion

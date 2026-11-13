@@ -32,8 +32,10 @@ namespace Nox.Offline.Runtime {
 			set {
 				var wasMuted = IsSelfMuted;
 				_speak = value;
-				if (wasMuted != IsSelfMuted)
-					OnSelfMuteChanged.Invoke(IsSelfMuted);
+				if (wasMuted == IsSelfMuted)
+					return;
+				OnSelfMuteChanged.Invoke(IsSelfMuted);
+				PushNameplateStatus();
 			}
 		}
 
@@ -54,9 +56,9 @@ namespace Nox.Offline.Runtime {
 			get {
 				if (!IsSpeaking) return LevelFlags.None;
 				return LevelFlags.Speaking | Speak switch {
-					SpeakMode.Whisper   => LevelFlags.Whisper,
+					SpeakMode.Whisper => LevelFlags.Whisper,
 					SpeakMode.Broadcast => LevelFlags.Broadcast,
-					_                   => LevelFlags.Normal
+					_ => LevelFlags.Normal
 				};
 			}
 		}
@@ -84,12 +86,32 @@ namespace Nox.Offline.Runtime {
 		public bool IsSelfMuted
 			=> Speak == SpeakMode.Muted;
 
+		/// <summary>
+		/// Voice channel of the session, taken when the voice is bound (see <see cref="ResolveVoiceChannel"/>):
+		/// the offline mod registered it at start-up, so it never has to be looked up again.
+		/// </summary>
+		private IChannelAudio _voiceChannel;
+
+		/// <summary>
+		/// Deafen state of that channel (muted, muted by a parent, or at volume 0). Refreshed when the channel
+		/// announces a change (see <see cref="OnVoiceChannelMuteChanged"/>), never read from the configuration:
+		/// <see cref="IsDeafened"/> is polled every frame by the nameplate.
+		/// </summary>
+		private bool _deafened;
+
 		/// <summary>Deafen is the voice channel being silent (muted, muted by a parent, or at volume 0).</summary>
 		public bool IsDeafened
-			=> Main.AudioAPI?.GetChannel("voice")?.IsSilent() ?? false;
+			=> _deafened;
+
+		/// <summary>
+		/// Takes the voice channel the offline mod registered at start-up (<see cref="Main.VoiceRegister"/>): the
+		/// player never resolves it through the audio API, which walked the mod list on every read.
+		/// </summary>
+		private void ResolveVoiceChannel()
+			=> _voiceChannel = Main.VoiceRegister?.Channel;
 
 		private readonly NoxEvent<bool> _onSelfMuteChanged = new();
-		private readonly NoxEvent<bool> _onDeafenChanged  = new();
+		private readonly NoxEvent<bool> _onDeafenChanged = new();
 
 		/// <inheritdoc />
 		public NoxEvent<bool> OnSelfMuteChanged
@@ -100,7 +122,6 @@ namespace Nox.Offline.Runtime {
 			=> _onDeafenChanged;
 
 		private readonly List<EventSubscription> _voiceSubscriptions = new();
-		private bool                             _lastDeafened;
 
 		/// <summary>Device currently capturing for this player, or null while none is bound.</summary>
 		private IMicrophone _microphone;
@@ -117,7 +138,7 @@ namespace Nox.Offline.Runtime {
 		/// initialized after us, hot-plug, manual switch) is bound without any per-frame polling.
 		/// </summary>
 		private void BindCurrentMicrophone() {
-			var api        = Main.MicrophoneAPI;
+			var api = Main.MicrophoneAPI;
 			var microphone = api?.Current ?? api?.Default;
 
 			if (microphone == null) {
@@ -146,7 +167,7 @@ namespace Nox.Offline.Runtime {
 			_microphone = microphone;
 
 			var clip = microphone.Start(MicrophoneOwner);
-			Audio    = clip ? new CapturedMicrophone(clip, microphone) : null;
+			Audio = clip ? new CapturedMicrophone(clip, microphone) : null;
 
 			// The device may already be muted (or at volume 0): announce its state right away.
 			ApplyMicrophoneSilence();
@@ -156,7 +177,7 @@ namespace Nox.Offline.Runtime {
 		private void DetachMicrophone() {
 			_microphone?.Stop(MicrophoneOwner);
 			_microphone = null;
-			Audio       = null;
+			Audio = null;
 		}
 
 		/// <summary>
@@ -185,8 +206,8 @@ namespace Nox.Offline.Runtime {
 
 			if (Speak != SpeakMode.Muted)
 				_speakWhenUnmuted = Speak;
-			Speak = _microphone.IsSilent() 
-				? SpeakMode.Muted 
+			Speak = _microphone.IsSilent()
+				? SpeakMode.Muted
 				: _speakWhenUnmuted;
 		}
 
@@ -217,13 +238,16 @@ namespace Nox.Offline.Runtime {
 			// A rebind must never leave a previous subscription attached.
 			UnbindVoiceEvents();
 
-			_lastDeafened = IsDeafened;
+			ResolveVoiceChannel();
+			_deafened = _voiceChannel.IsSilent();
 
 			if (Main.CoreAPI == null)
 				return;
 
+			Main.VoiceRegister?.OnMute.AddListener(OnVoiceChannelMuteChanged);
+			Main.VoiceRegister?.OnVolume.AddListener(OnVoiceChannelVolumeChanged);
+
 			_voiceSubscriptions.AddRange(new[] {
-				Main.CoreAPI.EventAPI.Subscribe("audio.channel.mute_changed", OnChannelMuteChanged),
 				Main.CoreAPI.EventAPI.Subscribe("audio.microphone.added", OnMicrophoneAdded),
 				Main.CoreAPI.EventAPI.Subscribe("audio.microphone.current_changed", OnMicrophoneCurrentChanged),
 				Main.CoreAPI.EventAPI.Subscribe("audio.microphone.mute_changed", OnMicrophoneMuteChanged),
@@ -238,6 +262,12 @@ namespace Nox.Offline.Runtime {
 		internal void UnbindVoiceEvents() {
 			DetachMicrophone();
 
+			Main.VoiceRegister?.OnMute.RemoveListener(OnVoiceChannelMuteChanged);
+			Main.VoiceRegister?.OnVolume.RemoveListener(OnVoiceChannelVolumeChanged);
+
+			_voiceChannel = null;
+			_deafened = false;
+
 			if (_voiceSubscriptions.Count == 0)
 				return;
 
@@ -249,13 +279,26 @@ namespace Nox.Offline.Runtime {
 			_voiceSubscriptions.Clear();
 		}
 
-		private void OnChannelMuteChanged(EventData context) {
-			var deafened = IsDeafened;
-			if (deafened == _lastDeafened)
+		/// <summary>The voice channel was muted or unmuted (values pushed by <see cref="Main.VoiceRegister"/>).</summary>
+		private void OnVoiceChannelMuteChanged(bool muted, bool effectiveMuted)
+			=> RefreshDeafened();
+
+		/// <summary>The voice channel volume changed, which is a deafen at 0 (values pushed by the register).</summary>
+		private void OnVoiceChannelVolumeChanged(float volume, float effectiveVolume)
+			=> RefreshDeafened();
+
+		/// <summary>
+		/// Re-reads the deafen state of the channel. Called on the channel events only: the nameplate polls
+		/// <see cref="IsDeafened"/> every frame, and the channel state comes from the configuration.
+		/// </summary>
+		private void RefreshDeafened() {
+			var deafened = _voiceChannel.IsSilent();
+			if (deafened == _deafened)
 				return;
 
-			_lastDeafened = deafened;
+			_deafened = deafened;
 			OnDeafenChanged.Invoke(deafened);
+			PushNameplateStatus();
 		}
 	}
 }

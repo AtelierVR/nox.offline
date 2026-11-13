@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using DefaultNamespace;
 using Nox.Audio.Players;
+using Nox.Avatars.Players;
 using Nox.CCK.Entities;
 using Nox.CCK.Utils;
 using Nox.Controllers;
@@ -13,16 +14,17 @@ using UnityEngine;
 using Logger = Nox.CCK.Utils.Logger;
 
 namespace Nox.Offline.Runtime {
-	public partial class Player : Entity, IPlayer, ILocalPlayerVoice, INameplateEntity {
+	public partial class Player : Entity, IPlayer, IPlayerAvatar, ILocalPlayerVoice, INameplateEntity {
 		public Player(Entities context, uint id) : base(context, id) {
 			GetOrCreatePart(EntityRig.Base.ToIndex());
 			BindDataChanges();
 			BindVoiceEvents();
 		}
 
-		/// <summary>Releases the voice resources with the player itself.</summary>
+		/// <summary>Releases the voice resources and the avatar binding with the player itself.</summary>
 		public override void Dispose() {
 			UnbindVoiceEvents();
+			Unbind();
 			base.Dispose();
 		}
 
@@ -64,12 +66,15 @@ namespace Nox.Offline.Runtime {
 			foreach (var part in _parts.Values)
 				part.Restore(controller);
 
+			SetController(controller);
 			ApplyToController(controller);
 		}
 
 		internal void RemoveController() {
 			foreach (var part in _parts.Values)
 				part.Store();
+
+			SetController(null);
 		}
 
 		public IPart[] GetParts()
@@ -163,9 +168,10 @@ namespace Nox.Offline.Runtime {
 
 		/// <summary>
 		/// Called every frame by <see cref="Session.Update"/>: refreshes what the local player feeds
-		/// to the session's views (its nameplate, ...).
+		/// to the session's views (its nameplate, the parameters of its avatar, ...).
 		/// </summary>
 		internal void OnUpdate() {
+			SyncAvatar();
 			UpdateNameplate();
 		}
 
