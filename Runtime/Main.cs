@@ -75,7 +75,7 @@ namespace Nox.Offline.Runtime {
 
 		static internal ISessionAPI SessionAPI
 			=> CoreAPI.ModAPI
-				.GetMod("session")
+				.GetMod("sessions")
 				.GetInstance<ISessionAPI>();
 
 		static internal IControllerAPI ControllerAPI

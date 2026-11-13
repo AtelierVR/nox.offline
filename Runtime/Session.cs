@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
+using Nox.CCK;
 using Nox.CCK.Properties;
 using Nox.CCK.Sessions;
 using Nox.CCK.Utils;
@@ -19,9 +20,9 @@ using Nox.Users;
 namespace Nox.Offline.Runtime {
 	public sealed partial class Session : BaseEditablePropertyObject, ISession, ITeamSession, IPhysicalSession {
 		internal Session(string id) {
-			_id           = id;
+			_id = id;
 			InterEntities = new Entities(this);
-			InterState    = new State(Status.Pending, "Session is initializing", 0f);
+			InterState = new State(Status.Pending, "Session is initializing", 0f);
 		}
 
 		internal IState InterState;
@@ -100,9 +101,7 @@ namespace Nox.Offline.Runtime {
 		public void Update() {
 			var tickRate = GetTargetTickRate();
 
-			// One lookup for the whole frame: the module set cannot change while the tick loop runs,
-			// and asking for it per tick rebuilt the list on every iteration of the while loop.
-			var modules = GetAllModules();
+			var modules = Modules;
 
 			if (tickRate != _lastKnownTickRate) {
 				_lastKnownTickRate = tickRate;
@@ -123,7 +122,7 @@ namespace Nox.Offline.Runtime {
 				player?.OnUpdate();
 		}
 
-        public void OnUserUpdated(IUser user) 
+		public void OnUserUpdated(IUser user)
 			=> PushNameplateUser(user);
 
 		/// <summary>
@@ -138,15 +137,14 @@ namespace Nox.Offline.Runtime {
 			if (!plate.IsAlive())
 				return;
 
-			plate.Set(Keys.USER, user);
+			var display = LocalPlayer?.Display;
 
-			// The local profile has no relation to itself (IUser.Relations is null for the authenticated
-			// user): the relation row stays empty.
+			plate.Set(Keys.USER, user);
 			plate.Set(Keys.STATUS, new Dictionary<string, string>());
 
-			// The session's player may carry a customised display (relay naming): it overrides the
-			// profile's own name, and clears back to it when there is none.
-			var display = LocalPlayer?.Display;
+			if (InterEntities.LocalPlayer is Player localPlayer)
+				localPlayer.PushNameplateStatus();
+
 			plate.Set(Keys.DISPLAY, display == user?.Display ? null : display);
 		}
 
@@ -166,13 +164,12 @@ namespace Nox.Offline.Runtime {
 			InterDimensions.SetActive(Runtime.Dimensions.MainIndex, true);
 			InterDimensions.SetCurrent();
 
-
 			var player = InterEntities.NewPlayer();
 			await UniTask.Yield();
 
 			OnControllerChanged(Main.ControllerAPI.Current);
 
-			foreach (var module in GetAllModules())
+			foreach (var module in Modules)
 				module.OnSessionSelected();
 		}
 
@@ -206,14 +203,14 @@ namespace Nox.Offline.Runtime {
 				foreach (var module in modules)
 					module.OnSessionSelected();
 
-			foreach (var module in GetAllModules())
+			foreach (var module in Modules)
 				module.OnSceneLoaded(descriptor, index, anchor);
 		}
 
 		public void OnSceneUnloaded(int index) {
 			Main.CoreAPI.EventAPI.Emit("session_scene_removed", this, index);
 
-			foreach (var module in GetAllModules())
+			foreach (var module in Modules)
 				module.OnSceneUnloaded(index);
 		}
 
@@ -231,7 +228,7 @@ namespace Nox.Offline.Runtime {
 				return;
 			}
 
-			foreach (var module in GetAllModules())
+			foreach (var module in Modules)
 				module.OnSessionDeselected();
 
 			InterDimensions.SetActive(Runtime.Dimensions.MainIndex, false);
@@ -264,33 +261,15 @@ namespace Nox.Offline.Runtime {
 		public UnityEvent<IPlayer, IPlayer> OnAuthorityTransferred { get; } = new();
 
 		/// <summary>
-		/// Every session module of the loaded dimensions, flattened.
+		/// Session modules of the loaded dimensions.
 		/// <para>
-		/// Flat loop instead of
-		/// <c>GetDescriptors().Where(e =&gt; e != null).SelectMany(d =&gt; d.GetModules&lt;ISessionModule&gt;()).ToArray()</c>:
-		/// that chain allocated a closure and two iterators per call, and the generic
-		/// <c>GetModules&lt;T&gt;()</c> copied the descriptor's array a second time through
-		/// <c>OfType&lt;T&gt;().ToArray()</c>. The non-generic <c>GetModules()</c> hands out the stored array,
-		/// so the type test happens here, in one pass.
+		/// Owned by <see cref="Dimensions"/> (see <see cref="Dimensions.Modules"/>): it is the one that
+		/// knows when a descriptor joins or leaves, so the list is built there and only read here. The
+		/// session keeps no copy, so there is nothing to invalidate and nothing to keep in sync.
 		/// </para>
 		/// </summary>
-		private ISessionModule[] GetAllModules() {
-			var modules     = new List<ISessionModule>();
-			var descriptors = InterDimensions.GetDescriptors();
-
-			for (var i = 0; i < descriptors.Length; i++) {
-				var descriptor = descriptors[i];
-				if (descriptor == null)
-					continue;
-
-				var descriptorModules = descriptor.GetModules();
-				for (var j = 0; j < descriptorModules.Length; j++)
-					if (descriptorModules[j] is ISessionModule module)
-						modules.Add(module);
-			}
-
-			return modules.ToArray();
-		}
+		private ISessionModule[] Modules
+			=> InterDimensions?.Modules ?? System.Array.Empty<ISessionModule>();
 
 		public void HandlePlayerJoined(IPlayer player) {
 			Logger.LogDebug($"OnPlayerJoined: {player}", tag: Tag);
@@ -302,7 +281,7 @@ namespace Nox.Offline.Runtime {
 			Main.CoreAPI.EventAPI.Emit("session_player_joined", this, player);
 			OnPlayerJoined.Invoke(player);
 
-			foreach (var module in GetAllModules()) {
+			foreach (var module in Modules) {
 				module.OnPlayerJoined(player);
 				module.OnPlayerVisibilityChanged(player, player.HasPhysical());
 			}
@@ -328,7 +307,7 @@ namespace Nox.Offline.Runtime {
 				HandleAuthorityTransferred(newMaster, master);
 			}
 
-			foreach (var module in GetAllModules())
+			foreach (var module in Modules)
 				module.OnPlayerLeft(player);
 		}
 
@@ -338,7 +317,7 @@ namespace Nox.Offline.Runtime {
 			Main.CoreAPI.EventAPI.Emit("session_entity_registered", this, entity);
 			OnEntityRegistered.Invoke(entity);
 
-			foreach (var module in GetAllModules())
+			foreach (var module in Modules)
 				module.OnEntityRegistered(entity);
 
 			if (entity is IPlayer player)
@@ -354,7 +333,7 @@ namespace Nox.Offline.Runtime {
 			Main.CoreAPI.EventAPI.Emit("session_entity_unregistered", this, entity);
 			OnEntityUnregistered.Invoke(entity);
 
-			foreach (var module in GetAllModules())
+			foreach (var module in Modules)
 				module.OnEntityUnregistered(entity);
 		}
 
@@ -364,7 +343,7 @@ namespace Nox.Offline.Runtime {
 			Main.CoreAPI.EventAPI.Emit("session_authority_transferred", this, player, previous);
 			OnAuthorityTransferred.Invoke(player, previous);
 
-			foreach (var module in GetAllModules())
+			foreach (var module in Modules)
 				module.OnAuthorityTransferred(player, previous);
 		}
 
@@ -374,8 +353,8 @@ namespace Nox.Offline.Runtime {
 			Main.CoreAPI.EventAPI.Emit("session_player_visibility_changed", this, player, isVisible);
 			OnPlayerVisibility.Invoke(player, isVisible);
 
-			foreach (var module in GetAllModules())
+			foreach (var module in Modules)
 				module.OnPlayerVisibilityChanged(player, isVisible);
 		}
-    }
+	}
 }

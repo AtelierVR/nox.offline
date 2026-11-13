@@ -1,7 +1,9 @@
 using Cysharp.Threading.Tasks;
+using Nox.Assets;
 using Nox.CCK.Sessions;
 using Nox.CCK.Worlds;
 using Nox.CCK.Network.Assets;
+using Nox.Network.Assets;
 using Nox.Sessions;
 using Nox.Worlds;
 using Logger = Nox.CCK.Utils.Logger;
@@ -50,8 +52,7 @@ namespace Nox.Offline.Runtime {
 				if (!Main.WorldAPI.HasInCache(hash)) {
 					session.UpdateState(Status.Pending, $"Downloading world '{options.Identifier.ToString()}'...", 0.15f);
 					var download = Main.WorldAPI.DownloadToCache(
-						bundle.Url,
-						hash: hash,
+						new IdentifierCache(options.Identifier, bundle),
 						progress: arg0 => session.UpdateState(Status.Pending, $"Downloading world '{options.Identifier.ToString()}'...", 0.15f + arg0 * 0.45f)
 					);
 					await download.Start();
@@ -80,7 +81,7 @@ namespace Nox.Offline.Runtime {
 			}
 
 			if (scene == null) {
-				Logger.LogError($"Failed to load scene for world {options.Identifier.ToString()} with version {options.Identifier.GetVersion()}", session.Tag);
+				Logger.LogError($"Failed to load scene for world {options.Identifier.ToString()}", session.Tag);
 				session.UpdateState(Status.Error, $"Failed to load world '{options.Identifier.ToString()}'", 1f);
 				return;
 			}
