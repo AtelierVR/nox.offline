@@ -1,43 +1,37 @@
 ﻿{
-    "name":  "Nox.Offline.Runtime",
-    "rootNamespace":  "",
-    "references":  [
-                       "UniTask",
-                       "Nox.Sessions",
-                       "Nox.Worlds",
-                       "Nox.CCK.Sessions",
-                       "Nox.CCK",
-                       "Nox.Network",
-                       "Nox.Entities",
-                       "Nox.CCK.Entities",
-                       "Nox.CCK.Worlds",
-                       "Nox.Players",
-                       "Nox.Users",
-                       "Nox.Controllers",
-                       "Nox.Worlds.Spawns",
-                       "Nox.Nameplate",
-                       "Nox.CCK.Nameplate",
-                       "Nox.Audio",
-                       "Nox.CCK.Audio",
-                       "Nox.CCK.Network"
-                   ],
-    "includePlatforms":  [
-
-                         ],
-    "excludePlatforms":  [
-
-                         ],
-    "allowUnsafeCode":  false,
-    "overrideReferences":  true,
-    "precompiledReferences":  [
-
-                              ],
-    "autoReferenced":  true,
-    "defineConstraints":  [
-
-                          ],
-    "versionDefines":  [
-
-                       ],
-    "noEngineReferences":  false
+    "name": "Nox.Offline.Runtime",
+    "rootNamespace": "",
+    "references": [
+        "UniTask",
+        "Nox.Sessions",
+        "Nox.Worlds",
+        "Nox.CCK.Sessions",
+        "Nox.CCK",
+        "Nox.Network",
+        "Nox.Assets",
+        "Nox.CCK.Assets",
+        "Nox.Entities",
+        "Nox.CCK.Entities",
+        "Nox.CCK.Worlds",
+        "Nox.Players",
+        "Nox.Users",
+        "Nox.Controllers",
+        "Nox.Worlds.Spawns",
+        "Nox.Nameplate",
+        "Nox.CCK.Nameplate",
+        "Nox.Audio",
+        "Nox.CCK.Audio",
+        "Nox.CCK.Network",
+        "Nox.Avatars",
+        "Nox.Avatars.Parameters"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

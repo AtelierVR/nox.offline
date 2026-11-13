@@ -39,7 +39,7 @@
       "register": "git+https://github.com/AtelierVR/nox.users.git"
     },
     {
-      "id": "session",
+      "id": "sessions",
       "type": "depends",
       "register": "git+https://github.com/AtelierVR/nox.sessions.git"
     },
@@ -62,7 +62,7 @@
   "constraints": [
     {
       "type": "after",
-      "id": "session"
+      "id": "sessions"
     },
     {
       "type": "after",
