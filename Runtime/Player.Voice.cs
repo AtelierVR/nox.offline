@@ -126,8 +126,14 @@ namespace Nox.Offline.Runtime {
 		/// <summary>Device currently capturing for this player, or null while none is bound.</summary>
 		private IMicrophone _microphone;
 
-		/// <summary>Mode announced while the device is live; a muted device announces <see cref="SpeakMode.Muted"/>.</summary>
-		private SpeakMode _speakWhenUnmuted = SpeakMode.Normal;
+		private VoiceModeState _modeState = new() {
+			Desired = SpeakMode.Normal,
+			AllowedModes = VoiceModeSettings.ALL_SPEAK_MODES,
+		};
+
+		/// <inheritdoc/>
+		public SpeakMode DesiredSpeak
+			=> _modeState.Desired;
 
 		/// <summary>Set once the "no microphone" warning was emitted, to keep the log quiet.</summary>
 		private bool _microphoneWarned;
@@ -199,16 +205,76 @@ namespace Nox.Offline.Runtime {
 			ApplyMicrophoneSilence();
 		}
 
+		private void OnNextSpeakMode(EventData context) {
+			var next = Next(_modeState.Desired);
+
+			if (!VoiceModeSettings.IsAllowed(next, _modeState.AllowedModes))
+				next = SpeakMode.Normal;
+
+			SetDesiredSpeak(next);
+		}
+
+		private static SpeakMode Next(SpeakMode mode) {
+			if (mode is < SpeakMode.Whisper or > SpeakMode.Broadcast)
+				return SpeakMode.Normal;
+
+			return mode == SpeakMode.Broadcast
+				? SpeakMode.Whisper
+				: (SpeakMode)((int)mode + 1);
+		}
+
+		private void OnSessionDataChanged(string[] key, object value, object previous) {
+			if (key is not { Length: > 0 })
+				return;
+
+			var name = string.Join(".", key);
+			if (name != VoiceModeSettings.SPEAK_MODE_KEY
+				&& name != VoiceModeSettings.ALLOWED_MODES_KEY
+				&& name != VoiceModeSettings.FORCE_MUTE_KEY)
+				return;
+
+			RefreshSessionVoice();
+		}
+
+		private void RefreshSessionVoice() {
+			var data = Context.Context?.Data;
+
+			_modeState.ForceMute = data?.Get(VoiceModeSettings.FORCE_MUTE_KEY, false) ?? false;
+			_modeState.AllowedModes = data?.Get(VoiceModeSettings.ALLOWED_MODES_KEY, VoiceModeSettings.ALL_SPEAK_MODES) ?? VoiceModeSettings.ALL_SPEAK_MODES;
+			_modeState.Session = data != null && data.Has(VoiceModeSettings.SPEAK_MODE_KEY)
+				? VoiceModeSettings.ParseMode(data.Get<object>(VoiceModeSettings.SPEAK_MODE_KEY))
+				: null;
+
+			SetDesiredSpeak(VoiceModeSettings.Resolve(_modeState.Session, VoiceModeSettings.ChangeOnJoin, _modeState.AllowedModes));
+		}
+
+		private void SetDesiredSpeak(SpeakMode mode) {
+			_modeState.Desired = mode;
+			ApplySpeakState();
+			PushNameplateStatus();
+
+			if (_modeState.Announced == mode)
+				return;
+
+			_modeState.Announced = mode;
+			Main.CoreAPI?.EventAPI.Emit("voice.speak_mode_changed", this, mode);
+		}
+
+		private void ApplySpeakState() {
+			var muted = _modeState.ForceMute || _microphone == null || _microphone.IsSilent();
+			var wanted = muted
+				? SpeakMode.Muted
+				: _modeState.Desired;
+
+			Speak = wanted;
+		}
+
 		/// <summary>Announces whether the bound device is silent (<see cref="MicrophoneExtensions.IsSilent"/>).</summary>
 		private void ApplyMicrophoneSilence() {
 			if (_microphone == null)
 				return;
 
-			if (Speak != SpeakMode.Muted)
-				_speakWhenUnmuted = Speak;
-			Speak = _microphone.IsSilent()
-				? SpeakMode.Muted
-				: _speakWhenUnmuted;
+			ApplySpeakState();
 		}
 
 		/// <summary>A device appeared: bind it while none is bound.</summary>
@@ -252,15 +318,21 @@ namespace Nox.Offline.Runtime {
 				Main.CoreAPI.EventAPI.Subscribe("audio.microphone.current_changed", OnMicrophoneCurrentChanged),
 				Main.CoreAPI.EventAPI.Subscribe("audio.microphone.mute_changed", OnMicrophoneMuteChanged),
 				Main.CoreAPI.EventAPI.Subscribe("audio.microphone.volume_changed", OnMicrophoneVolumeChanged),
-				Main.CoreAPI.EventAPI.Subscribe("audio.microphone.removed", OnMicrophoneRemoved)
+				Main.CoreAPI.EventAPI.Subscribe("audio.microphone.removed", OnMicrophoneRemoved),
+				Main.CoreAPI.EventAPI.Subscribe("voice.speak_mode.next", OnNextSpeakMode)
 			});
 
+			Context.Context?.Data?.OnChanged.AddListener(OnSessionDataChanged);
+
 			BindCurrentMicrophone();
+			RefreshSessionVoice();
 		}
 
 		/// <summary>Releases every subscription taken by <see cref="BindVoiceEvents"/>.</summary>
 		internal void UnbindVoiceEvents() {
 			DetachMicrophone();
+
+			Context.Context?.Data?.OnChanged.RemoveListener(OnSessionDataChanged);
 
 			Main.VoiceRegister?.OnMute.RemoveListener(OnVoiceChannelMuteChanged);
 			Main.VoiceRegister?.OnVolume.RemoveListener(OnVoiceChannelVolumeChanged);
@@ -299,6 +371,14 @@ namespace Nox.Offline.Runtime {
 			_deafened = deafened;
 			OnDeafenChanged.Invoke(deafened);
 			PushNameplateStatus();
+		}
+
+		private struct VoiceModeState {
+			public SpeakMode Desired;
+			public SpeakMode? Announced;
+			public SpeakMode? Session;
+			public int AllowedModes;
+			public bool ForceMute;
 		}
 	}
 }

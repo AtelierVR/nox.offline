@@ -108,15 +108,15 @@ namespace Nox.Offline.Runtime {
 
 			var status = new Dictionary<string, string>(muted ? 2 : deafened ? 1 : 0);
 			if (muted)
-				status[MuteIcon] = "mute";
+				status[_muteIcon] = "mute";
 			if (deafened)
-				status[DeafIcon] = "deaf";
+				status[_deafIcon] = "deaf";
 
 			plate.Set(Keys.STATUS, status);
 		}
 
-		/// <summary>Status icon keys, resolved once: <see cref="NameplateExtensions.StatusIcon"/> builds an id.</summary>
-		private static readonly string MuteIcon = NameplateExtensions.StatusIcon("mute").ToString();
-		private static readonly string DeafIcon = NameplateExtensions.StatusIcon("deaf").ToString();
+		/// <summary>Status icon keys, resolved once: <see cref="NameplateExtensions.VoiceIcon"/> builds an id.</summary>
+		private static readonly string _muteIcon = NameplateExtensions.VoiceIcon("mute").ToString();
+		private static readonly string _deafIcon = NameplateExtensions.StatusIcon("deaf").ToString();
 	}
 }
