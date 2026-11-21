@@ -99,35 +99,35 @@ namespace Nox.Offline.Runtime {
 			_module = null;
 
 			// Their IParameter dies with the avatar: keeping them would read a disposed playable.
-			Properties.RemoveAll(property => property is AvatarParameterProperty);
+			PropertyList.RemoveAll(property => property is AvatarParameterProperty);
 		}
 
 		private void OnParameterRegistered(IParameter parameter) {
 			if (parameter == null)
 				return;
 
-			for (var i = 0; i < Properties.Count; i++) {
-				var existing = Properties[i];
+			for (var i = 0; i < PropertyList.Count; i++) {
+				var existing = PropertyList[i];
 				if (existing.Key != parameter.Key)
 					continue;
 
 				// The key is stable across avatars, the IParameter instance is not: a property still
 				// bound to the previous avatar reads its disposed playable.
 				if (existing is AvatarParameterProperty avatarProperty && !ReferenceEquals(avatarProperty.Parameter, parameter))
-					Properties[i] = new AvatarParameterProperty(parameter);
+					PropertyList[i] = new AvatarParameterProperty(parameter);
 
 				// A data entry owns this key (the same name is a value of the player): leave it.
 				return;
 			}
 
-			Properties.Add(new AvatarParameterProperty(parameter));
+			PropertyList.Add(new AvatarParameterProperty(parameter));
 		}
 
 		private void OnParameterUnregistered(IParameter parameter) {
 			if (parameter == null)
 				return;
 
-			Properties.RemoveAll(property => property is AvatarParameterProperty avatarProperty
+			PropertyList.RemoveAll(property => property is AvatarParameterProperty avatarProperty
 				&& ReferenceEquals(avatarProperty.Parameter, parameter));
 		}
 	}

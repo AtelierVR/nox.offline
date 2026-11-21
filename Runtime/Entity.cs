@@ -1,50 +1,86 @@
+using System;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using Nox.CCK;
 using Nox.CCK.Sessions;
 using Nox.CCK.Utils;
 using Nox.Entities;
+using Nox.Players;
+using Nox.Sessions;
+using UnityEngine.Events;
 
 namespace Nox.Offline.Runtime {
-	public class Entity : IEntity {
+	public class Entity : IPropertiesEntity, IPhysicalEntity, IOwnedEntity, IDisposable {
 		internal readonly Entities Context;
 		private Physical _physical;
+		private PhysicalState _physicalState;
 
 		/// <summary>
 		/// Properties of the entity, cached per data entry: an offline entity has no avatar parameters
 		/// to publish, so what it exposes are the entries of its <see cref="IDataContainer"/>.
 		/// </summary>
-		internal readonly List<IProperty> Properties = new();
+		internal readonly List<IProperty> PropertyList = new();
 
 		private readonly DataContainer _data = new();
 
 		protected Entity(Entities context, uint id) {
-			Id      = id;
+			Id = id;
 			Context = context;
 			_data.OnChanged.AddListener(OnDataChanged);
 			context.RegisterEntity(this);
 		}
 
-		public uint Id { get; }
+		public uint Id { get; set; }
+
+		/// <summary>
+		/// Entity id of the player owning this entity. Offline there is a single player, and an entity
+		/// nobody claimed belongs to the session master (<see cref="Entities.MasterOwnerId"/>, the default).
+		/// </summary>
+		public uint OwnerId { get; internal set; } = Entities.MasterOwnerId;
+
+		/// <summary>
+		/// The player owning this entity: the session master while it has no explicit owner, and the master
+		/// again when the player it was granted to is gone.
+		/// </summary>
+		public virtual IPlayer Owner
+			=> OwnerId == Entities.MasterOwnerId
+				? Context?.Context?.MasterPlayer
+				: Context?.GetEntity<IPlayer>(OwnerId)
+					?? Context?.Context?.MasterPlayer;
+
+		/// <summary>The local player owns this entity: it drives its state.</summary>
+		public bool IsOwner
+			=> Owner is { IsLocal: true };
+
+		/// <summary>Invoked when the ownership of this entity changes (new owner, previous owner).</summary>
+		public virtual UnityEvent<IPlayer, IPlayer> OnOwnershipChanged { get; } = new();
+
+		/// <summary>Apply an ownership decided by the session (offline the session grants everything).</summary>
+		public virtual void ApplyOwner(IPlayer receiver, IPlayer requester)
+			=> OwnerId = receiver?.Id
+				?? Entities.MasterOwnerId;
 
 		/// <summary>
 		/// Values the entity keeps in its data container, as properties (one per entry). Built on
 		/// demand, so a key written later shows up without anybody declaring it.
 		/// </summary>
-		public IProperty[] GetProperties() {
-			foreach (var name in _data.Keys)
-				GetOrCreateProperty(name);
+		public IProperty[] Properties {
+			get {
+				foreach (var name in _data.Keys)
+					GetOrCreateProperty(name);
 
-			return Properties.ToArray();
+				return PropertyList.ToArray();
+			}
 		}
 
 		/// <summary>Cached property of a data entry, created when it is first seen.</summary>
 		private DataProperty GetOrCreateProperty(string name) {
-			foreach (var property in Properties)
+			foreach (var property in PropertyList)
 				if (property is DataProperty data && data.Name == name)
 					return data;
 
 			var created = new DataProperty(_data, name);
-			Properties.Add(created);
+			PropertyList.Add(created);
 			return created;
 		}
 
@@ -59,7 +95,7 @@ namespace Nox.Offline.Runtime {
 			var name = string.Join(".", key);
 
 			if (@new == null) {
-				Properties.RemoveAll(property => property is DataProperty data && data.Name == name);
+				PropertyList.RemoveAll(property => property is DataProperty data && data.Name == name);
 				return;
 			}
 
@@ -68,9 +104,10 @@ namespace Nox.Offline.Runtime {
 
 		public bool TryGetProperty(int key, out IProperty property) {
 			// Makes sure the entries written since the last call are cached.
-			GetProperties();
+			foreach (var name in _data.Keys)
+				GetOrCreateProperty(name);
 
-			foreach (var prop in Properties) {
+			foreach (var prop in PropertyList) {
 				if (prop.Key != key)
 					continue;
 				property = prop;
@@ -84,13 +121,13 @@ namespace Nox.Offline.Runtime {
 		public IDataContainer Data
 			=> _data;
 
-		virtual protected Physical InstantiatePhysical() {
+		virtual protected UniTask<Physical> InstantiatePhysical() {
 			Logger.LogWarning($"Entity {Id} does not implement {nameof(InstantiatePhysical)}, cannot create physical representation.", tag: nameof(Entity));
-			return null;
+			return UniTask.FromResult<Physical>(null);
 		}
 
-		public bool HasPhysical()
-			=> _physical;
+		public PhysicalState PhysicalState
+			=> _physicalState;
 
 		public bool TryGetPhysical<T>(out T physical) where T : Physical {
 			if (_physical is T p) {
@@ -119,26 +156,42 @@ namespace Nox.Offline.Runtime {
 			// Base implementation does nothing
 		}
 
-		public bool MakePhysical() {
+		public async UniTask<bool> MakePhysical() {
 			if (_physical)
 				return true;
-			_physical = InstantiatePhysical();
+
+			if (_physicalState != PhysicalState.None)
+				return false;
+
+			_physicalState = PhysicalState.Creating;
+			try {
+				_physical = await InstantiatePhysical();
+			} finally {
+				_physicalState = PhysicalState.None;
+			}
+
 			if (!_physical)
 				return false;
+
 			OnPhysicalCreated();
 			return true;
 		}
 
-		public void DestroyPhysical() {
+		public UniTask DestroyPhysical() {
 			if (!_physical)
-				return;
+				return UniTask.CompletedTask;
+
+			_physicalState = PhysicalState.Destroying;
 			_physical.gameObject.DestroyImmediate();
 			_physical = null;
+			_physicalState = PhysicalState.None;
 			OnPhysicalDestroyed();
+
+			return UniTask.CompletedTask;
 		}
 
 		public virtual void Dispose() {
-			DestroyPhysical();
+			DestroyPhysical().Forget();
 			_data.Clear();
 			Context.UnregisterEntity(this);
 		}

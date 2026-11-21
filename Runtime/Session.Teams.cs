@@ -53,5 +53,13 @@ namespace Nox.Offline.Runtime {
 		/// <inheritdoc />
 		public void SetRelation(ITeam team, ITeam other, TeamRelation relation)
 			=> _teams.SetRelation(team, other, relation);
+
+		/// <inheritdoc />
+		public bool GetCollision(ITeam team, ITeam other)
+			=> _teams.GetCollision(team, other);
+
+		/// <inheritdoc />
+		public void SetCollision(ITeam team, ITeam other, bool collide)
+			=> _teams.SetCollision(team, other, collide);
 	}
 }

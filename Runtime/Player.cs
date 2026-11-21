@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using Cysharp.Threading.Tasks;
 using DefaultNamespace;
 using Nox.Audio.Players;
 using Nox.Avatars.Players;
@@ -16,9 +17,18 @@ using Logger = Nox.CCK.Utils.Logger;
 namespace Nox.Offline.Runtime {
 	public partial class Player : Entity, IPlayer, IPlayerAvatar, ILocalPlayerVoice, INameplateEntity {
 		public Player(Entities context, uint id) : base(context, id) {
+			OwnerId = id;
 			GetOrCreatePart(EntityRig.Base.ToIndex());
 			BindDataChanges();
 			BindVoiceEvents();
+		}
+
+		/// <summary>A player owns itself: offline nothing can take it away.</summary>
+		public override IPlayer Owner
+			=> this;
+
+		public override void ApplyOwner(IPlayer receiver, IPlayer requester) {
+			// A player is its own owner: an ownership granted by the session never moves it.
 		}
 
 		/// <summary>Releases the voice resources and the avatar binding with the player itself.</summary>
@@ -38,9 +48,8 @@ namespace Nox.Offline.Runtime {
 			return p;
 		}
 
-		override protected Physical InstantiatePhysical() {
-			throw new System.NotImplementedException();
-		}
+		override protected UniTask<Physical> InstantiatePhysical()
+			=> throw new System.NotImplementedException();
 
 		internal void UpdateController(IController controller) {
 			if (controller == null) {
@@ -101,6 +110,9 @@ namespace Nox.Offline.Runtime {
 		public bool IsMaster
 			=> true;
 
+		public bool IsPrivileged
+			=> true;
+
 		public bool IsLocal
 			=> true;
 
@@ -157,7 +169,7 @@ namespace Nox.Offline.Runtime {
 			get => _parts.TryGetValue(EntityRig.Base.ToIndex(), out var p) ? p.Angular : Vector3.zero;
 			set => GetOrCreatePart(EntityRig.Base.ToIndex()).Angular = value;
 		}
-		
+
 		override protected void OnPhysicalCreated() {
 			Context.Context.HandlePlayerVisibilityChanged(this, true);
 		}

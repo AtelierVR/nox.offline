@@ -2,6 +2,7 @@ using System;
 using Nox.Avatars.Parameters;
 using Nox.CCK.Network;
 using Nox.Entities;
+using UnityEngine.Events;
 
 namespace Nox.Offline.Runtime {
 	/// <summary>
@@ -29,6 +30,9 @@ namespace Nox.Offline.Runtime {
 		/// <summary>The parameter this property is bound to.</summary>
 		public IParameter Parameter
 			=> _parameter;
+
+		/// <inheritdoc />
+		public UnityEvent<IProperty> OnUpdated { get; } = new();
 
 		/// <inheritdoc />
 		public int Key { get; }

@@ -2,6 +2,7 @@ using System;
 using Nox.CCK;
 using Nox.CCK.Network;
 using Nox.Entities;
+using UnityEngine.Events;
 
 namespace Nox.Offline.Runtime {
 	/// <summary>
@@ -24,6 +25,9 @@ namespace Nox.Offline.Runtime {
 
 		/// <inheritdoc />
 		public int Key { get; }
+
+		/// <inheritdoc />
+		public UnityEvent<IProperty> OnUpdated { get; } = new();
 
 		/// <inheritdoc />
 		public string Name { get; }

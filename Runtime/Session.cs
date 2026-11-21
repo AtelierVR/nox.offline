@@ -16,6 +16,7 @@ using UnityEngine.Events;
 using Logger = Nox.CCK.Utils.Logger;
 using Keys = Nox.CCK.Nameplate.Constants;
 using Nox.Users;
+using System;
 
 namespace Nox.Offline.Runtime {
 	public sealed partial class Session : BaseEditablePropertyObject, ISession, ITeamSession, IPhysicalSession {
@@ -109,7 +110,7 @@ namespace Nox.Offline.Runtime {
 					module.OnTickRateChanged(tickRate);
 			}
 
-			_tickAccumulator += Time.deltaTime;
+			_tickAccumulator += UnityEngine.Time.deltaTime;
 			var interval = 1f / tickRate;
 			while (_tickAccumulator >= interval) {
 				_tickAccumulator -= interval;
@@ -124,6 +125,10 @@ namespace Nox.Offline.Runtime {
 
 		public void OnUserUpdated(IUser user)
 			=> PushNameplateUser(user);
+
+		/// <summary>An offline session runs on the local clock: it is the reference of everything it drives.</summary>
+		public DateTime Time
+			=> DateTime.UtcNow;
 
 		/// <summary>
 		/// Pushes the local profile onto the active controller's nameplate: its plate is only a handle
@@ -180,7 +185,11 @@ namespace Nox.Offline.Runtime {
 				localPlayer.Respawn();
 
 			var modules = descriptor.GetModules<ISessionModule>();
-			Logger.LogDebug($"OnDescriptorAdded: {descriptor} with {modules.Length} modules", descriptor as Object, Tag);
+			Logger.LogDebug(
+				$"OnDescriptorAdded: {descriptor} with {modules.Length} modules",
+				descriptor as UnityEngine.Object,
+				Tag
+			);
 
 			foreach (var module in modules)
 				module.OnLoaded(this);
@@ -190,7 +199,7 @@ namespace Nox.Offline.Runtime {
 					continue;
 				foreach (var module in modules) {
 					module.OnPlayerJoined(player);
-					module.OnPlayerVisibilityChanged(player, player.HasPhysical());
+					module.OnPlayerVisibilityChanged(player, player.PhysicalState != PhysicalState.None);
 				}
 			}
 
@@ -283,7 +292,7 @@ namespace Nox.Offline.Runtime {
 
 			foreach (var module in Modules) {
 				module.OnPlayerJoined(player);
-				module.OnPlayerVisibilityChanged(player, player.HasPhysical());
+				module.OnPlayerVisibilityChanged(player, player.PhysicalState != PhysicalState.None);
 			}
 
 			var master = MasterPlayer;
@@ -337,14 +346,16 @@ namespace Nox.Offline.Runtime {
 				module.OnEntityUnregistered(entity);
 		}
 
-		public void HandleAuthorityTransferred(IPlayer player, IPlayer previous) {
-			Logger.LogDebug($"OnAuthorityTransferred: {player}", tag: Tag);
+		public void HandleAuthorityTransferred(IPlayer @new, IPlayer old) {
+			Logger.LogDebug($"OnAuthorityTransferred: {@new}", tag: Tag);
 
-			Main.CoreAPI.EventAPI.Emit("session_authority_transferred", this, player, previous);
-			OnAuthorityTransferred.Invoke(player, previous);
+			Main.CoreAPI.EventAPI.Emit("session_authority_transferred", this, @new, old);
+			OnAuthorityTransferred.Invoke(@new, old);
 
 			foreach (var module in Modules)
-				module.OnAuthorityTransferred(player, previous);
+				module.OnAuthorityTransferred(@new, old);
+
+			RefreshMasterOwnership(@new, old);
 		}
 
 		public void HandlePlayerVisibilityChanged(IPlayer player, bool isVisible) {

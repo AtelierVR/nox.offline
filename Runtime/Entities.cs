@@ -2,12 +2,19 @@ using System.Collections.Generic;
 using System.Linq;
 using Nox.CCK.Utils;
 using Nox.Entities;
+using Nox.Sessions;
 using UnityEngine.Events;
 
 namespace Nox.Offline.Runtime {
 	public class Entities : IEntities {
 		public const uint LocalPlayerId   = 0;
 		public const uint InvalidEntityId = uint.MaxValue;
+
+		/// <summary>
+		/// Owner id that means « the session master ». It is the default owner of an offline entity: an
+		/// entity nobody claimed belongs to whoever holds the authority.
+		/// </summary>
+		public const uint MasterOwnerId = IOwnedEntity.MASTER_OWNER_ID;
 
 		internal Entities(Session context)
 			=> Context = context;
@@ -27,6 +34,9 @@ namespace Nox.Offline.Runtime {
 		private readonly Dictionary<uint, Entity> _entities = new();
 
 		internal void RegisterEntity(Entity entity) {
+			if (entity.Id == InvalidEntityId || _entities.ContainsKey(entity.Id) && _entities[entity.Id] != entity)
+				entity.Id = NextEntityId();
+
 			if (!_entities.TryAdd(entity.Id, entity)) {
 				Logger.LogWarning($"Entity with ID {entity.Id} is already registered.", tag: Context.Tag);
 				return;
@@ -69,7 +79,7 @@ namespace Nox.Offline.Runtime {
 
 		public int GetCount<T>() where T : IEntity
 			=> _entities.Values.OfType<T>().Count();
-		
+
 		public UnityEvent<IEntity> OnEntityAdded { get; } = new();
 		public UnityEvent<IEntity> OnEntityRemoved { get; } = new();
 
@@ -91,6 +101,10 @@ namespace Nox.Offline.Runtime {
 			if (player == null) {
 				player  = new Player(this, LocalPlayerId);
 				LocalId = player.Id;
+
+				MasterId = player.Id;
+
+				Context.HandleAuthorityTransferred(player, null);
 			} else {
 				Logger.LogWarning($"Player with ID {player.Id} is already registered.", tag: Context.Tag);
 			}
